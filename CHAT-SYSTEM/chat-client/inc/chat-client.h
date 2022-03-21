@@ -8,11 +8,16 @@
 #ifdef __CHATCLIENT_H__
 
 #include <ncurses.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 
 #define CHAT_MSG_BUFFER 80
+#define PORT 5000
 
 
-int parseArguments(int, char*, char*);
+int parseArguments(int, char*, char*, struct sockaddr_in*, struct hostent**, char*, char*);
 WINDOW* createNewWindow(int height, int width, int starty, int startx);
 
 
