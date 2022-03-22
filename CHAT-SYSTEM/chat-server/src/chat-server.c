@@ -6,9 +6,14 @@
 */
 
 #include <stdio.h>
+#include "../inc/processMessage.h"
 
 int main(void)
 {
-
+	char tmpMessage[MAXMESSAGEBUFFER] = {};
+	
+	
+	strcpy(tmpMessage, "172.168.20.22~[mike]~>>~AAAAAAAAAA~(03:04:20)");
+	parseMessage(tmpMessage);
 	return 0;
 }
