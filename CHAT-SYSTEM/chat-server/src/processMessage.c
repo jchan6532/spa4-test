@@ -31,14 +31,17 @@ int parseMessage(char* message)
 			case: 4
 				// DO some stuff
 				break;
-			case: 2
+			case: 5
 				// DO some stuff
 				break;
 			default:
 			 // DO SOME STUFF
-			 	
-				
+			 				
 		}
+		
+		// use the ip and search through DS to check if the ip is from a reoccuring 
+		// client if the ip is not known to server create it if it we have space on the server
+		
 		printf("%s\n", token);
 		token = strtok(NULL, s);
 	}
