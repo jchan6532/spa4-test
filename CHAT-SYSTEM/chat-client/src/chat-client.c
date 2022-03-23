@@ -45,6 +45,8 @@ int main(int argc, char* argv)
         return 1;
     }*/
 
+    printf("Client started...\n");
+
     parseArguments(argc, &argv[1], &argv[2], &server_address, &host, userID, serverName);
 
     // get host info
@@ -86,7 +88,7 @@ int main(int argc, char* argv)
         if(buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
 
         write(myserversocket, buffer, strlen(buffer));
-        memset(buffer, 0, BUFSIZ);
+        memset(buffer, 0, CHAT_MSG_BUFFER);
         len = read (myserversocket, buffer, CHAT_MSG_BUFFER);
         printf("<< %s\n", buffer);
         fflush(stdout);
@@ -96,7 +98,7 @@ int main(int argc, char* argv)
 
     close(myserversocket);
     printf("[CLIENT] : Client done.\n");
-
+    fflush(stdout);
 
 
 

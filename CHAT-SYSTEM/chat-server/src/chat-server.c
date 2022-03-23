@@ -14,7 +14,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define BUFFERSIZE 1024
+#define BUFFERSIZE 80
 #define PORT 5000
 
 int main(void)
