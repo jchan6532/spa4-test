@@ -1,0 +1,13 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\CHAT-SYSTEM",
+    "\\CHAT-SYSTEM\\chat-server",
+    "\\CHAT-SYSTEM\\chat-server\\bin",
+    "\\CHAT-SYSTEM\\chat-server\\inc",
+    "\\CHAT-SYSTEM\\chat-server\\obj",
+    "\\CHAT-SYSTEM\\chat-server\\src"
+  ],
+  "SelectedNode": "\\CHAT-SYSTEM\\chat-server\\src\\chat-server.c",
+  "PreviewInSolutionExplorer": false
+}
