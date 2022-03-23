@@ -14,7 +14,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define BUFFERSIZE 1024
+#define BUFFERSIZE 80
 #define PORT 5000
 
 int main(void)
@@ -24,6 +24,7 @@ int main(void)
 		return -1;
 	}
 
+	
 	struct sockaddr_in serverAddress;
 	memset(&serverAddress, 0, sizeof(serverAddress));
 	serverAddress.sin_family = AF_INET;
