@@ -97,7 +97,7 @@ int main(int argc, char* argv)
     if((myserversocket = socket (AF_INET, SOCK_STREAM, 0)) < 0)
     {
 
-        displayWindow(msg_win, "[CLIENT] : Getting Client Socket - FAILED\n", 0, 1);
+        displayWindow(msg_win, "[CLIENT] : Getting Client Socket - FAILED", 0, 1);
         sleep(5);
         delwin(chat_win);
         delwin(msg_win);
@@ -106,12 +106,12 @@ int main(int argc, char* argv)
     }
 
     // attempt socket connection
-    displayWindow(msg_win, "[CLIENT] : Connecting to server\n", 0, 1);
+    displayWindow(msg_win, "[CLIENT] : Connecting to server", 0, 1);
     sleep(2);
     fflush(stdout);
     if (connect(myserversocket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0)
     {
-        displayWindow(msg_win, "[CLIENT] : Connect to server - FAILED\n", 1, 0);
+        displayWindow(msg_win, "[CLIENT] : Connect to server - FAILED", 1, 0);
         sleep(5);
         delwin(chat_win);
         delwin(msg_win);
@@ -122,14 +122,15 @@ int main(int argc, char* argv)
 
     done =1;
     memset(buffer, 0, CHAT_MSG_BUFFER);
-    if (done == 1) printf("Enter your [chat text]");
+    if (done == 1) displayWindow(chat_win, "Enter your [chat text]", 0, 0);
 
+    int rowCount = 1;
     // client should exit when user types >> bye <<
     while(done)
     {
-        printf(">> ");
+        inputMessage(chat_win, buffer);
+        displayWindow(msg_win, buffer, rowCount, 0);
         fflush(stdout);
-        fgets(buffer, CHAT_MSG_BUFFER, stdin);
 
 
         if(buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
@@ -143,8 +144,13 @@ int main(int argc, char* argv)
         write(myserversocket, buffer, strlen(buffer));
         memset(buffer, 0, CHAT_MSG_BUFFER);
         len = read (myserversocket, buffer, CHAT_MSG_BUFFER);
-        printf("<< %s\n", buffer);
+        /*char* msgReceived = (char*)malloc(sizeof(buffer) + strlen(">> "));
+        strcpy(msgReceived, "<< ");
+        strcat(msgReceived, buffer);*/
+        rowCount++;
+        displayWindow(msg_win, buffer, rowCount, 0);
         fflush(stdout);
+        rowCount++;
     }
 
 
@@ -199,7 +205,7 @@ void inputMessage(WINDOW *win, char *word)
      
   blankWindow(win);                          /* make it a clean window */
   getmaxyx(win, maxrow, maxcol);          /* get window size */
-  bzero(word, BUFSIZ);
+  bzero(word, CHAT_MSG_BUFFER);
   wmove(win, 1, 1);                       /* position cusor at top */
   for (i = 0; (ch = wgetch(win)) != '\n'; i++) 
   {
