@@ -21,7 +21,3 @@
 #include <netdb.h>
 
 #include "../inc/chat-client.h"
-
-
-
-
