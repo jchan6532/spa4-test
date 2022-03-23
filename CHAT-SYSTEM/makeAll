@@ -1,0 +1,6 @@
+cd chat-client
+echo "MAKING Chat-client"
+make
+cd ../chat-server
+echo "Making Chat-server"
+make

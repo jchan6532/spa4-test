@@ -1,0 +1,2 @@
+cd ./chat-server
+bin/chat-server
