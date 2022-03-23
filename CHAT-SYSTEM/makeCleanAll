@@ -1,0 +1,6 @@
+cd chat-client
+echo "Removing Chat-client files"
+make clean
+cd ../chat-server
+echo "Removing Chat-server files"
+make clean

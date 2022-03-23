@@ -6,10 +6,13 @@
 */
 
 #include <stdio.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
+#include <string.h>
+#include <unistd.h>
 
 #define BUFFERSIZE 1024
 #define PORT 5000
@@ -27,7 +30,7 @@ int main(void)
 	serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 	serverAddress.sin_port = htons(PORT);
 
-	int bindRet = Bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress);
+	int bindRet = bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
 	if (bindRet == -1) {
 		return -1;
 	}
