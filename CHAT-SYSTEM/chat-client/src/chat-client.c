@@ -86,11 +86,13 @@ int main(int argc, char* argv)
         if(buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
 
         write(myserversocket, buffer, strlen(buffer));
-        memset(buffer, 0, BUFSIZ);
-        len = read (myserversocket, buffer, CHAT_MSG_BUFFER);
-        printf("<< %s\n", buffer);
+        //memset(buffer, 0, BUFSIZ);
+        //len = read (myserversocket, buffer, CHAT_MSG_BUFFER);
+        printf("SENT << %s\n", buffer);
         fflush(stdout);
-        done = 0;
+        if(strcmp(buffer, "bye") == 0){
+            done = 0;   
+        }
     }
 
 

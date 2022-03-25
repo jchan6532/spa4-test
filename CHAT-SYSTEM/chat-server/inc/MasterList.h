@@ -4,7 +4,10 @@
 #define MAXCLIENTS 10
 
 typedef struct MasterListStruct{
-    MESSAGELIST messageList;
+    MESSAGELIST* msgListHead;
     CLIENTINFO allClients[MAXCLIENTS];
+    
+    int numMsgInList;
     int numClients;
+    int highestClientID;
 } MASTERLIST;
