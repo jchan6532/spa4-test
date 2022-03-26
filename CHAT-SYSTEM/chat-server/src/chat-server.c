@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <pthread.h>
+#include <stdlib.h>
 
 #include "../inc/MasterList.h"
 
@@ -52,13 +53,7 @@ void InitializeMasterList(void){
 
 
 
-
-
-void* DealWithClient(void* clientSocketPtr){
-	int i = 0;
-	int targetClientIndex = 0;
-	int clientSocket = *((int*)clientSocketPtr);
-	
+void BusyWaitForMasterList(void){
 	do{
 		if(masterListInUse == false){
 			masterListInUse = true;
@@ -67,16 +62,35 @@ void* DealWithClient(void* clientSocketPtr){
 		usleep(1);
 	} while(masterListInUse == true);
 	
+	return;
+}
+
+
+
+
+
+
+
+void* DealWithClient(void* clientInfoPtr){
+	int i = 0;
+	int clientSocket = 0;
+	int targetClientIndex = 0;
+	CLIENTINFO clientInfo = *((CLIENTINFO*)clientInfoPtr);	//MAYBE SPLIT CLIENTINFO INTO SEPARATE PRIMITIVE DATATYPE VARIABLES, AND ASSIGN 1 BY 1
+	
+	BusyWaitForMasterList();
+	
 	masterList.numClients++;
 	masterList.highestClientID++;
 	for(i=0;i<MAXCLIENTS;i++){
 		if(masterList.allClients[i].isActive == false){
 			targetClientIndex = i;
-			masterList.allClients[i].isActive = true;
-			masterList.allClients[i].clientID = ++masterList.highestClientID;	//QUESTIONABLE
-			masterList.allClients[i].clientSocket = clientSocket;
-			strcpy(masterList.allClients[i].IPAddress, inet_ntoa(clientAddress.sin_addr));
-			strcpy(masterList.allClients[i].UserName, "null");
+			masterList.allClients[i].isActive = clientInfo.isActive;
+			masterList.allClients[i].clientID = clientInfo.clientID;	//QUESTIONABLE
+			masterList.allClients[i].clientSocket = clientInfo.clientSocket;
+			strcpy(masterList.allClients[i].UserName, clientInfo.UserName);
+			strcpy(masterList.allClients[i].IPAddress, clientInfo.IPAddress);
+			
+			clientSocket = masterList.allClients[i].clientSocket;
 			break;
 		}
 	}
@@ -98,13 +112,7 @@ void* DealWithClient(void* clientSocketPtr){
 			//printf("%s\n", buffer);
 			if(strcmp(buffer, "bye") == 0){
 					
-				do{
-					if(masterListInUse == false){
-						masterListInUse = true;
-						break;
-					}
-					usleep(1);
-				}while(masterListInUse == true);
+				BusyWaitForMasterList();
 				
 				masterList.numClients--;
 				/*CLEAR CLIENT LIST*/
@@ -127,7 +135,7 @@ void* DealWithClient(void* clientSocketPtr){
 	
 	pthread_exit((void*)1);
 	
-	return 1;
+	return (void*)1;
 }
 
 
@@ -137,7 +145,7 @@ void* DealWithClient(void* clientSocketPtr){
 
 
 
-void* BroadCast(void){
+void* BroadCast(void* data){
 	bool stopBroadcasting = false;
 	int i = 0;
 	MESSAGELIST* currentMsg = NULL;
@@ -159,13 +167,7 @@ void* BroadCast(void){
 				currentMsg = currentMsg->next;
 			}
 			
-			do{
-				if(masterListInUse == false){
-					masterListInUse = true;
-					break;
-				}
-				usleep(1);
-			} while(masterListInUse == true);
+			BusyWaitForMasterList();
 			
 			currentMsg = masterList.msgListHead;
 			while(currentMsg != NULL){
@@ -183,25 +185,7 @@ void* BroadCast(void){
 	
 	pthread_exit((void*)1);
 	
-	return 1;
-}
-
-
-
-
-
-
-
-void BusyWaitForMasterList(void){
-	do{
-		if(masterListInUse == false){
-			masterListInUse = true;
-			break;
-		}
-		usleep(1);
-	} while(masterListInUse == true);
-	
-	return;
+	return (void*)1;
 }
 
 
@@ -267,7 +251,7 @@ int main(void)
 	pthread_t clientThreadIDs[MAXCLIENTS];
 	pthread_t broadcastThreadID;
 
-	
+	CLIENTINFO connectingClient;
 	while(stopAcceptClient == false){
 		
 		clientLen = sizeof(clientAddress);
@@ -277,9 +261,14 @@ int main(void)
 		}
 		printf("connected to %s \n", inet_ntoa(clientAddress.sin_addr));
 		
+		connectingClient.clientSocket = clientSocket;
+		connectingClient.clientID = masterList.highestClientID + 1;
+		strcpy(connectingClient.IPAddress, inet_ntoa(clientAddress.sin_addr));
+		strcpy(connectingClient.UserName, "null");
+		connectingClient.isActive = true;
 
 		
-		pthread_create(&(clientThreadIDs[masterList.numClients-1]), NULL, DealWithClient, (void*)&clientSocket);
+		pthread_create(&(clientThreadIDs[masterList.numClients-1]), NULL, DealWithClient, (void*)&connectingClient);
 		usleep(1);
 		if(initialBroadcast == true){
 			pthread_create(&broadcastThreadID, NULL, BroadCast, NULL);
