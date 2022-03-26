@@ -135,13 +135,15 @@ int main(int argc, char* argv)
 
         if(buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
         
+
+
+        write(myserversocket, buffer, strlen(buffer));
         // exit loop if user enters the exit command
         if (strcmp(buffer, ">>bye<<") == 0)
         {
             break;
         }
-
-        write(myserversocket, buffer, strlen(buffer));
+        
         memset(buffer, 0, CHAT_MSG_BUFFER);
         len = read (myserversocket, buffer, CHAT_MSG_BUFFER);
         /*char* msgReceived = (char*)malloc(sizeof(buffer) + strlen(">> "));
@@ -236,7 +238,6 @@ void inputMessage(WINDOW *win, char *word)
   }
 }  /* input_win */
 
-
 // clears window if shouldBlank is 1
 // otherwise, updates window with new info
 void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank)
@@ -267,9 +268,31 @@ void blankWindow(WINDOW *win)
 }  /* blankWin */
 
 
+// clears window if shouldBlank is 1
+// otherwise, updates window with new info
+void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank)
+{
+  if(shouldBlank == 1) blankWindow(win);                /* make it a clean window */
+  wmove(win, (whichRow+1), 1);                       /* position cusor at approp row */
+  wprintw(win, word);
+  wrefresh(win);
+} /* display_win */
 
 
-
-
-
-
+// clears all info from window
+void blankWindow(WINDOW *win)
+{
+  int i;
+  int maxrow, maxcol;
+     
+  getmaxyx(win, maxrow, maxcol);
+  for (i = 1; i < maxcol-2; i++)  
+  {
+    wmove(win, i, 1);
+    refresh();
+    wclrtoeol(win);
+    wrefresh(win);
+  }
+  box(win, 0, 0);             /* draw the box again */
+  wrefresh(win);
+}  /* blankWin */

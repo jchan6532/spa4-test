@@ -1,2 +1,2 @@
 cd ./chat-server
-bin/chat-server
+./bin/chat-server
