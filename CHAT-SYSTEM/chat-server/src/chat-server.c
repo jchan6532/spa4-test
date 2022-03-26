@@ -19,12 +19,13 @@
 
 #include "../inc/MasterList.h"
 
-#define BUFFERSIZE 1024
+#define BUFFERSIZE 80
 #define PORT 5000
 
 
 MASTERLIST masterList;
 bool masterListInUse;
+bool messageListInUse;
 
 
 
@@ -101,11 +102,13 @@ void* DealWithClient(void* clientInfoPtr){
 	
 	bool clientEndedConvo = false;
 	char buffer[BUFFERSIZE];
-	char userName[6];
+	char userName[6] = "";
 	int bytesRead = 0;
+	char clientMessage[41];
 	
 	while(clientEndedConvo == false){
 		memset(buffer, 0, BUFFERSIZE);
+		memset(clientMessage, 0, 41);
 		
 		bytesRead = read(clientSocket, buffer, BUFFERSIZE);
 		if (bytesRead > 0) {
@@ -121,8 +124,25 @@ void* DealWithClient(void* clientInfoPtr){
 				clientEndedConvo = true;
 			}
 			else{
-				/*NEED TO PARSE USERNAME HERE*/
+				BusyWaitForMasterList();
+				
+				/*NEED TO PARSE USERNAME HERE AND GET MESSAGE CONTENT*/
 				strcpy(masterList.allClients[targetClientIndex].UserName, userName);
+				
+				/*ADD PARSED CLIENT MESSAGE TO THE LINKED LIST*/
+				MESSAGELIST* current = masterList.msgListHead;
+				while(current != NULL){
+					if(current != NULL){
+						current = current->next;
+					}
+					else{
+						current = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
+						strcpy(current->Message, buffer);
+					}
+				}
+				
+				masterListInUse = false;
+				
 			}
 		}
 		/*
@@ -165,13 +185,15 @@ void* BroadCast(void* data){
 					}
 				}
 				currentMsg = currentMsg->next;
+				usleep(1);
 			}
 			
 			BusyWaitForMasterList();
 			
 			currentMsg = masterList.msgListHead;
 			while(currentMsg != NULL){
-				previousMsg = currentMsg;	
+				previousMsg = currentMsg;
+				currentMsg = currentMsg->next;
 				free(previousMsg);
 				previousMsg = NULL;
 			}
@@ -251,7 +273,8 @@ int main(void)
 	pthread_t clientThreadIDs[MAXCLIENTS];
 	pthread_t broadcastThreadID;
 
-	CLIENTINFO connectingClient;
+	int i = 0; //I IS NUMBER OF ACCEPTED CLIENTS
+	CLIENTINFO connectingClient = {0};
 	while(stopAcceptClient == false){
 		
 		clientLen = sizeof(clientAddress);
@@ -260,6 +283,7 @@ int main(void)
 			return -1;
 		}
 		printf("connected to %s \n", inet_ntoa(clientAddress.sin_addr));
+		i++;
 		
 		connectingClient.clientSocket = clientSocket;
 		connectingClient.clientID = masterList.highestClientID + 1;
@@ -268,18 +292,18 @@ int main(void)
 		connectingClient.isActive = true;
 
 		
-		pthread_create(&(clientThreadIDs[masterList.numClients-1]), NULL, DealWithClient, (void*)&connectingClient);
-		usleep(1);
+		pthread_create(&(clientThreadIDs[i-1]), NULL, DealWithClient, (void*)&connectingClient);
+		usleep(10);
 		if(initialBroadcast == true){
 			pthread_create(&broadcastThreadID, NULL, BroadCast, NULL);
 			initialBroadcast = false;
 			usleep(1);
 		}
 		
-		if(masterList.numClients == 0){
+		if(i == 0){
 			stopAcceptClient = true;
 		}
-		else if(masterList.numClients == MAXCLIENTS){
+		else if(i == MAXCLIENTS){
 			stopAcceptClient = true;
 		}
 		
@@ -292,7 +316,6 @@ int main(void)
 	* JOINING ALL THREADS
 	*/
 	int joinStatus = 0;
-	int i = 0;
 	for(i=0;i<MAXCLIENTS;i++){
 		joinStatus = pthread_join(clientThreadIDs[i], NULL);
 	}
