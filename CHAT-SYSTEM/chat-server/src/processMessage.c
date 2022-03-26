@@ -6,6 +6,7 @@
 */
 
 #include "../inc/processMessage.h"
+#define maxDelimsPerMessage 4
 
 int parseMessage(char* message)
 {
@@ -20,34 +21,46 @@ int parseMessage(char* message)
 	char user[8] = {};
 	int messageRead = 0;
 	int splitCounter = 0;
+	int messageLength = 0;
+	int messageDelimCounter = 0;
+	
+	messageLength = strlen(message);
+	
+	for(int i = 0; i < messageLength; i++)
+	{	
+		if(message[i] == '|' && messageDelimCounter != maxDelimsPerMessage)
+		{
+			messageDelimCounter++;
+			printf("%d HEY\n", messageDelimCounter);
+		}
+		if(messageDelimCounter == maxDelimsPerMessage)
+		{
+			printf("%c \n", message[i + 1]);
+			strncpy(msg, message + i + 1, messageLength - i);
+			break;
+		}
+	}
 	
 	token = strtok(message, s);
-	strcpy(msgLength, token);
+	strcpy(msgLength, token);	
 	splitCounter++;
+	
 	printf("%s %d\n", token, splitCounter);
 	while(token != NULL)
 	{
-		
-			if(messageRead != 1)
-			{	 
-				splitCounter++;	
-				token = strtok(NULL, s);	
-				
-				//printf("%s", token);	
-				
-			}
-			else
-			{
-				break;
-			}		
+ 		splitCounter++;	
+		token = strtok(NULL, s);	
+
 		switch(splitCounter)
 		{
+
 			case 2:
 				// DO some stuff
 				strcpy(userIp, token);
 				printf("%s %d\n", token, splitCounter);
 				break;
 			case 3:
+
 				strcpy(user, token);
 				printf("%s %d\n", token, splitCounter);
 				// DO some stuff
@@ -57,20 +70,16 @@ int parseMessage(char* message)
 				printf("%s %d\n", token, splitCounter);
 				// DO some stuff
 				break;
-			case 5:
-				strcpy(msg, token);
-				printf("%s %d\n", token, splitCounter);
-				messageRead = 1;
-				break;
 			default:
 				break;
 			 // DO SOME STUFF
-			 				
+
 		}
-		// use the ip and search through DS to check if the ip is from a reoccuring 
-		// client if the ip is not known to server create it if it we have space on the server
 	}
+	printf("the message is %s", msg); 
 	
+
+		
 	splitCounter = 0;
 	
 	return 0;
