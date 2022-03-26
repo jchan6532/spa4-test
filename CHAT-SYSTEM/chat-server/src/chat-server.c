@@ -25,6 +25,9 @@
 MASTERLIST masterList;
 bool masterListInUse;
 
+
+
+
 void InitializeMasterList(void){
 	int i = 0;
 	
@@ -45,41 +48,94 @@ void InitializeMasterList(void){
 	return;
 }
 
+
+
+
+
+
+
 void* DealWithClient(void* clientSocketPtr){
-	bool clientEndedConvo = false;
-	char buffer[BUFFERSIZE];
+	int i = 0;
+	int targetClientIndex = 0;
 	int clientSocket = *((int*)clientSocketPtr);
 	
-	while(clientEndedConvo == false){
-		
-		memset(buffer, 0, BUFFERSIZE);
-		
-		do{
-			if(masterListInUse == false){
-				masterListInUse = true;
-				break;
-			}
-			usleep(1);
-		}while(masterListInUse == true);
-		
-		int bytesRead = 0;
-		bytesRead = read(*clientSocket, buffer, BUFFERSIZE);
-		if (bytesRead > 0) {
-			printf("%s\n", buffer);
-			if(strcmp(buffer, "bye") == 0){
-				clientEndedConvo = true;
-				masterList.numClients--;
-			}
+	do{
+		if(masterListInUse == false){
+			masterListInUse = true;
+			break;
 		}
-		else{
-			return (void*)(-1);
+		usleep(1);
+	} while(masterListInUse == true);
+	
+	masterList.numClients++;
+	masterList.highestClientID++;
+	for(i=0;i<MAXCLIENTS;i++){
+		if(masterList.allClients[i].isActive == false){
+			targetClientIndex = i;
+			masterList.allClients[i].isActive = true;
+			masterList.allClients[i].clientID = ++masterList.highestClientID;	//QUESTIONABLE
+			masterList.allClients[i].clientSocket = clientSocket;
+			strcpy(masterList.allClients[i].IPAddress, inet_ntoa(clientAddress.sin_addr));
+			strcpy(masterList.allClients[i].UserName, "null");
+			break;
 		}
-		
-		masterListInUse = false;
 	}
 	
-	return (void*)1;
+	masterListInUse = false;
+	
+	
+	
+	bool clientEndedConvo = false;
+	char buffer[BUFFERSIZE];
+	char userName[6];
+	int bytesRead = 0;
+	
+	while(clientEndedConvo == false){
+		memset(buffer, 0, BUFFERSIZE);
+		
+		bytesRead = read(clientSocket, buffer, BUFFERSIZE);
+		if (bytesRead > 0) {
+			//printf("%s\n", buffer);
+			if(strcmp(buffer, "bye") == 0){
+					
+				do{
+					if(masterListInUse == false){
+						masterListInUse = true;
+						break;
+					}
+					usleep(1);
+				}while(masterListInUse == true);
+				
+				masterList.numClients--;
+				/*CLEAR CLIENT LIST*/
+				
+				masterListInUse = false;
+				clientEndedConvo = true;
+			}
+			else{
+				/*NEED TO PARSE USERNAME HERE*/
+				strcpy(masterList.allClients[targetClientIndex].UserName, userName);
+			}
+		}
+		/*
+		else{
+			pthread_exit((void*)-1);
+			return -1;
+		}
+		*/
+	}
+	
+	pthread_exit((void*)1);
+	
+	return 1;
 }
+
+
+
+
+
+
+
 
 void* BroadCast(void){
 	bool stopBroadcasting = false;
@@ -88,7 +144,7 @@ void* BroadCast(void){
 	MESSAGELIST* previousMsg = NULL;
 	
 	while(stopBroadcasting == false){
-		if(masterList.numClients == 0){
+		if(masterList.numClients <= 0){
 			stopBroadcasting = true;
 		}
 		
@@ -120,12 +176,39 @@ void* BroadCast(void){
 			
 			masterList.msgListHead = NULL;
 			masterListInUse = false;
+			
 			usleep(1);
 		}
 	}
 	
-	return (void*)1;
+	pthread_exit((void*)1);
+	
+	return 1;
 }
+
+
+
+
+
+
+
+void BusyWaitForMasterList(void){
+	do{
+		if(masterListInUse == false){
+			masterListInUse = true;
+			break;
+		}
+		usleep(1);
+	} while(masterListInUse == true);
+	
+	return;
+}
+
+
+
+
+
+
 	
 
 int main(void)
@@ -153,11 +236,18 @@ int main(void)
 	serverAddress.sin_addr.s_addr = htonl(INADDR_ANY);
 	serverAddress.sin_port = htons(PORT);
 
+
+	/*
+	* BIND SOCKET
+	*/
 	int bindRet = bind(serverSocket, (struct sockaddr*)&serverAddress, sizeof(serverAddress));
 	if (bindRet == -1) {
 		return -1;
 	}
 
+	/*
+	* LISTEN SOCKET
+	*/
 	int listenRet = listen(serverSocket, 5);
 	if (listenRet == -1) {
 		return -1;
@@ -177,7 +267,6 @@ int main(void)
 	pthread_t clientThreadIDs[MAXCLIENTS];
 	pthread_t broadcastThreadID;
 
-	int i = 0;
 	
 	while(stopAcceptClient == false){
 		
@@ -189,30 +278,13 @@ int main(void)
 		printf("connected to %s \n", inet_ntoa(clientAddress.sin_addr));
 		
 
-		for(i=0;i<MAXCLIENTS;i++){
-			if(masterList.allClients[i].clientID == -1){
-				masterList.allClients[i].clientID = masterList.highestClientID++;
-			}
-			
-			if(strcmp(masterList.allClients[i].IPAddress, "") == 0){
-				strcpy(masterList.allClients[i].IPAddress, inet_ntoa(clientAddress.sin_addr));
-			}
-			
-			if(strcmp(masterList.allClients[i].UserName, "") == 0){
-				strcpy(masterList.allClients[i].UserName, "admin");
-			}
-			
-			if(masterList.allClients[i].isActive == false){
-				masterList.allClients[i].isActive = true;
-			}
-		}
-		masterList.numClients++;
-		masterList.highestClientID++;
 		
 		pthread_create(&(clientThreadIDs[masterList.numClients-1]), NULL, DealWithClient, (void*)&clientSocket);
+		usleep(1);
 		if(initialBroadcast == true){
 			pthread_create(&broadcastThreadID, NULL, BroadCast, NULL);
 			initialBroadcast = false;
+			usleep(1);
 		}
 		
 		if(masterList.numClients == 0){
@@ -221,15 +293,21 @@ int main(void)
 		else if(masterList.numClients == MAXCLIENTS){
 			stopAcceptClient = true;
 		}
+		
+		//usleep(1);
 	}
 	
+	
+	
+	/*
+	* JOINING ALL THREADS
+	*/
 	int joinStatus = 0;
+	int i = 0;
 	for(i=0;i<MAXCLIENTS;i++){
 		joinStatus = pthread_join(clientThreadIDs[i], NULL);
 	}
 	joinStatus = pthread_join(broadcastThreadID, NULL);
-
-
 
 	close(serverSocket);
 
