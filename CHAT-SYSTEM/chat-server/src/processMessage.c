@@ -9,42 +9,68 @@
 
 int parseMessage(char* message)
 {
-	const char s[2] = "~";
+	const char s[2] = "|";
 	char* token;
 	
-	token = strtok(message, s);
 	
+	char msgLength[3] = {};
+	char userIp[16] = {};
+	char directionOfMessage[4] = {};
+	char msg[41] = {};
+	char user[8] = {};
+	int messageRead = 0;
+	int splitCounter = 0;
+	
+	token = strtok(message, s);
+	strcpy(msgLength, token);
+	splitCounter++;
+	printf("%s %d\n", token, splitCounter);
 	while(token != NULL)
 	{
-		splitCounter++;
+		
+			if(messageRead != 1)
+			{	 
+				splitCounter++;	
+				token = strtok(NULL, s);	
+				
+				//printf("%s", token);	
+				
+			}
+			else
+			{
+				break;
+			}		
 		switch(splitCounter)
 		{
-			case: 1
+			case 2:
+				// DO some stuff
+				strcpy(userIp, token);
+				printf("%s %d\n", token, splitCounter);
+				break;
+			case 3:
+				strcpy(user, token);
+				printf("%s %d\n", token, splitCounter);
 				// DO some stuff
 				break;
-			case: 2
+			case 4:
+				strcpy(directionOfMessage, token);
+				printf("%s %d\n", token, splitCounter);
 				// DO some stuff
 				break;
-			case: 3
-				// DO some stuff
-				break;
-			case: 4
-				// DO some stuff
-				break;
-			case: 5
-				// DO some stuff
+			case 5:
+				strcpy(msg, token);
+				printf("%s %d\n", token, splitCounter);
+				messageRead = 1;
 				break;
 			default:
+				break;
 			 // DO SOME STUFF
 			 				
 		}
-		
 		// use the ip and search through DS to check if the ip is from a reoccuring 
 		// client if the ip is not known to server create it if it we have space on the server
-		
-		printf("%s\n", token);
-		token = strtok(NULL, s);
 	}
+	
 	splitCounter = 0;
 	
 	return 0;
