@@ -236,6 +236,7 @@ int main(void)
 		return -1;
 	}
 
+	
 	struct sockaddr_in serverAddress;
 	memset(&serverAddress, 0, sizeof(serverAddress));
 	serverAddress.sin_family = AF_INET;
