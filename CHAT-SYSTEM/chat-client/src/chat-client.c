@@ -10,6 +10,9 @@
 // the chat window code reference
 // TITLE    :   ncurses-01.c
 // AUTHOR   :   Sam Hsu
+
+
+// https://stackoverflow.com/questions/2283494/get-ip-address-of-an-interface-on-linux
 // ...
 
 #include <stdio.h>
@@ -25,6 +28,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <ifaddrs.h>
 
 #include "../inc/chat-client.h"
 
@@ -38,7 +42,45 @@ int main(int argc, char* argv)
     struct hostent* host;
     char buffer[CHAT_MSG_BUFFER];
 
-    // not enough args
+    struct ifaddrs *ifaddr, *ifa;
+    int family, s;
+    char clienthost[NI_MAXHOST];
+
+
+    // get all of the ip addresses assoc with client
+    if(getifaddrs(&ifaddr) == -1)
+    {
+      printf("error getting ip address\n");
+      return -1;
+    }
+
+    // iterate through until you get the default ip address
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
+    {
+      if (ifa->ifa_next == NULL)
+      {
+        continue;
+      }
+
+      s=getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), clienthost, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
+
+      // check if address connected is the default ens33
+      if ((strcmp(ifa->ifa_name, "ens33")==0) && (ifa->ifa_addr->sa_family == AF_INET))
+      {
+          if (s!= 0)
+          {
+            printf("error getting ip address\n");
+            return -1;
+          }
+
+      }
+
+    }
+
+    // free the memory
+    freeifaddrs(ifaddr);
+
+  // not enough args
     /*if (argc != 3)
     {
         printf("USAGE: chat-client.c -userID -serverName\n");
@@ -46,6 +88,7 @@ int main(int argc, char* argv)
     }*/
 
     printf("Client started...\n");
+
 
     parseArguments(argc, &argv[1], &argv[2], &server_address, &host, userID, serverName);
 
@@ -84,7 +127,7 @@ int main(int argc, char* argv)
     scrollok(chat_win, TRUE);
 
 
-        // get host info
+    // get host info
     host = gethostbyname(serverName);
 
     // initialize struct to get a socket to host
@@ -105,8 +148,11 @@ int main(int argc, char* argv)
         return 3;
     }
 
+
+
     // attempt socket connection
     displayWindow(msg_win, "[CLIENT] : Connecting to server", 0, 1);
+    displayWindow(msg_win, clienthost, 1, 0);
     sleep(2);
     fflush(stdout);
     if (connect(myserversocket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0)
@@ -132,12 +178,18 @@ int main(int argc, char* argv)
         displayWindow(msg_win, buffer, rowCount, 0);
         fflush(stdout);
 
-
+        // handle message input newline character
         if(buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
         
 
+        // attach headers / footers to message for server
+        int messageLength = strlen(buffer);
+        char* messageToServer = composeMessage(buffer, messageLength, userID);
 
+        // sends message to server
         write(myserversocket, buffer, strlen(buffer));
+
+
         // exit loop if user enters the exit command
         if (strcmp(buffer, ">>bye<<") == 0)
         {
@@ -150,7 +202,11 @@ int main(int argc, char* argv)
         strcpy(msgReceived, "<< ");
         strcat(msgReceived, buffer);*/
         rowCount++;
+        
+        // moves the sent text to the upper chat window
         displayWindow(msg_win, buffer, rowCount, 0);
+
+
         fflush(stdout);
         rowCount++;
     }
@@ -162,9 +218,6 @@ int main(int argc, char* argv)
 
 
     sleep(5);
-
-    // start thread for inputting text
-
 
     // destroys the chat window and message window
     delwin(chat_win);
@@ -238,6 +291,10 @@ void inputMessage(WINDOW *win, char *word)
   }
 }  /* input_win */
 
+
+
+
+
 // clears window if shouldBlank is 1
 // otherwise, updates window with new info
 void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank)
@@ -247,6 +304,7 @@ void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank)
   wprintw(win, word);
   wrefresh(win);
 } /* display_win */
+
 
 
 // clears all info from window
@@ -268,31 +326,7 @@ void blankWindow(WINDOW *win)
 }  /* blankWin */
 
 
-// clears window if shouldBlank is 1
-// otherwise, updates window with new info
-void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank)
+char* composeMessage(char* buffer, int messageLength, char* userID)
 {
-  if(shouldBlank == 1) blankWindow(win);                /* make it a clean window */
-  wmove(win, (whichRow+1), 1);                       /* position cusor at approp row */
-  wprintw(win, word);
-  wrefresh(win);
-} /* display_win */
-
-
-// clears all info from window
-void blankWindow(WINDOW *win)
-{
-  int i;
-  int maxrow, maxcol;
-     
-  getmaxyx(win, maxrow, maxcol);
-  for (i = 1; i < maxcol-2; i++)  
-  {
-    wmove(win, i, 1);
-    refresh();
-    wclrtoeol(win);
-    wrefresh(win);
-  }
-  box(win, 0, 0);             /* draw the box again */
-  wrefresh(win);
-}  /* blankWin */
+  return "";
+}

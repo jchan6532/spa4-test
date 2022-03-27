@@ -20,7 +20,8 @@
 int parseArguments(int, char*, char*, struct sockaddr_in*, struct hostent**, char*, char*);
 WINDOW* createNewWindow(int height, int width, int starty, int startx);
 void inputMessage(WINDOW *win, char *word);
-void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank);
 void blankWindow(WINDOW *win);
+void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank);
+char* composeMessage(char* buffer, int messageLength, char* userID);
 
 #endif
