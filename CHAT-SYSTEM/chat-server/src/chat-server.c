@@ -124,33 +124,33 @@ void* DealWithClient(void* clientInfoPtr){
 				clientEndedConvo = true;
 			}
 			else{
-				BusyWaitForMasterList();
-				
-				/*NEED TO PARSE USERNAME HERE AND GET MESSAGE CONTENT*/
-				strcpy(masterList.allClients[targetClientIndex].UserName, userName);
-				
-				/*ADD PARSED CLIENT MESSAGE TO THE LINKED LIST*/
-				MESSAGELIST* current = masterList.msgListHead;
-				while(current != NULL){
-					if(current != NULL){
-						current = current->next;
-					}
-					else{
-						current = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
-						strcpy(current->Message, buffer);
+				for(i=0;i<MAXCLIENTS;i++){
+					if(masterList.allClients[i].isActive == true){
+						write(masterList.allClients[i].clientSocket, buffer, strlen(buffer));
 					}
 				}
+					
+				// BusyWaitForMasterList();
 				
-				masterListInUse = false;
+				// /*NEED TO PARSE USERNAME HERE AND GET MESSAGE CONTENT*/
+				// //strcpy(masterList.allClients[targetClientIndex].UserName, userName);
+				
+				// /*ADD PARSED CLIENT MESSAGE TO THE LINKED LIST*/
+				// MESSAGELIST* current = masterList.msgListHead;
+				// do{
+				// 	if(current == NULL){
+				// 		current = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
+				// 		strcpy(current->Message, buffer);
+				// 		current->next = NULL;
+				// 		//printf("added %s\n", current->Message);
+				// 	}
+				// 	current = current->next;
+				// } while(current != NULL);
+				
+				// masterListInUse = false;
 				
 			}
 		}
-		/*
-		else{
-			pthread_exit((void*)-1);
-			return -1;
-		}
-		*/
 	}
 	
 	pthread_exit((void*)1);
@@ -169,7 +169,7 @@ void* BroadCast(void* data){
 	bool stopBroadcasting = false;
 	int i = 0;
 	MESSAGELIST* currentMsg = NULL;
-	MESSAGELIST* previousMsg = NULL;
+	MESSAGELIST* next = NULL;
 	
 	while(stopBroadcasting == false){
 		if(masterList.numClients <= 0){
@@ -178,25 +178,29 @@ void* BroadCast(void* data){
 		
 		if(stopBroadcasting == false){
 			currentMsg = masterList.msgListHead;
-			while(currentMsg != NULL){
-				for(i=0;i<MAXCLIENTS;i++){
-					if(masterList.allClients[i].isActive == true){
-						write(masterList.allClients[i].clientSocket, currentMsg->Message, strlen(currentMsg->Message));
+			do{
+				if(currentMsg != NULL){
+					printf("%s\n", currentMsg->Message);
+					for(i=0;i<MAXCLIENTS;i++){
+						if(masterList.allClients[i].isActive == true){
+							write(masterList.allClients[i].clientSocket, currentMsg->Message, strlen(currentMsg->Message));
+						}
 					}
+					currentMsg = currentMsg->next;
 				}
-				currentMsg = currentMsg->next;
 				usleep(1);
-			}
+			}while(currentMsg != NULL);
 			
 			BusyWaitForMasterList();
 			
 			currentMsg = masterList.msgListHead;
-			while(currentMsg != NULL){
-				previousMsg = currentMsg;
-				currentMsg = currentMsg->next;
-				free(previousMsg);
-				previousMsg = NULL;
-			}
+			do{
+				if(currentMsg != NULL){
+					next = currentMsg->next;
+					free(next);
+					currentMsg = next;
+				}
+			}while(currentMsg != NULL);
 			
 			masterList.msgListHead = NULL;
 			masterListInUse = false;
@@ -295,11 +299,11 @@ int main(void)
 		
 		pthread_create(&(clientThreadIDs[i-1]), NULL, DealWithClient, (void*)&connectingClient);
 		usleep(10);
-		if(initialBroadcast == true){
-			pthread_create(&broadcastThreadID, NULL, BroadCast, NULL);
-			initialBroadcast = false;
-			usleep(1);
-		}
+		// if(initialBroadcast == true){
+		// 	pthread_create(&broadcastThreadID, NULL, BroadCast, NULL);
+		// 	initialBroadcast = false;
+		// 	usleep(1);
+		// }
 		
 		if(i == 0){
 			stopAcceptClient = true;
@@ -320,7 +324,7 @@ int main(void)
 	for(i=0;i<MAXCLIENTS;i++){
 		joinStatus = pthread_join(clientThreadIDs[i], NULL);
 	}
-	joinStatus = pthread_join(broadcastThreadID, NULL);
+	//joinStatus = pthread_join(broadcastThreadID, NULL);
 
 	close(serverSocket);
 
