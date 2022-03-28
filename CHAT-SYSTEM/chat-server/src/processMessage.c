@@ -6,40 +6,30 @@
 */
 
 #include "../inc/processMessage.h"
-#define maxDelimsPerMessage 4
+#define MAXDELIMSPERMESSAGE 4
+#define MAXMESSAGESIZE 81
+#define IPLENGTH 16
+#define MAXBYTESRECORDED 3
+#define DELiMETERSIZE 3
 
 int parseMessage(char* message)
 {
-	const char s[2] = "|";
+
+	// Create some variables that are used to create constants for delimeter
+	// aswell variables to store the user credentials in tempVariables.
+	const char s[DELiMETERSIZE] = "|";
 	char* token;
 	
-	
-	char msgLength[3] = {};
-	char userIp[16] = {};
+	char msgLength[MAXBYTESRECORDED] = {};
+	char userIp[IPLENGTH] = {};
 	char directionOfMessage[4] = {};
 	char msg[41] = {};
 	char user[8] = {};
+	char processedMessage[MAXMESSAGESIZE] = {};
 	int messageRead = 0;
 	int splitCounter = 0;
-	int messageLength = 0;
-	int messageDelimCounter = 0;
 	
-	messageLength = strlen(message);
-	
-	for(int i = 0; i < messageLength; i++)
-	{	
-		if(message[i] == '|' && messageDelimCounter != maxDelimsPerMessage)
-		{
-			messageDelimCounter++;
-			printf("%d HEY\n", messageDelimCounter);
-		}
-		if(messageDelimCounter == maxDelimsPerMessage)
-		{
-			printf("%c \n", message[i + 1]);
-			strncpy(msg, message + i + 1, messageLength - i);
-			break;
-		}
-	}
+	getUserMessage(message, msg);
 	
 	token = strtok(message, s);
 	strcpy(msgLength, token);	
@@ -76,13 +66,34 @@ int parseMessage(char* message)
 
 		}
 	}
-	printf("the message is %s", msg); 
 	
-
-		
+	printf("the message is %s", msg); 		
 	splitCounter = 0;
 	
 	return 0;
+}
+
+void getUserMessage(char* message, char* msg)
+{
+	int messageLength = 0;
+	int messageDelimCounter = 0;
+	
+	messageLength = strlen(message);
+	
+	for(int i = 0; i < messageLength; i++)
+	{	
+		if(message[i] == '|' && messageDelimCounter != MAXDELIMSPERMESSAGE)
+		{
+			messageDelimCounter++;
+			printf("%d HEY\n", messageDelimCounter);
+		}
+		if(messageDelimCounter == MAXDELIMSPERMESSAGE)
+		{
+			printf("%c \n", message[i + 1]);
+			strncpy(msg, message + i + 1, messageLength - i);
+			break;
+		}
+	}
 }
 
 

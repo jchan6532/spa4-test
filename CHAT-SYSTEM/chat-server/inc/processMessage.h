@@ -16,3 +16,5 @@
 #define DELIMSIZE 16
 
 int parseMessage(char* message);
+
+void getUserMessage(char* message, char* msg);
