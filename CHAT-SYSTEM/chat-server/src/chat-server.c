@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 #include "../inc/MasterList.h"
+#include "../inc/processMessage.h"
 
 #define BUFFERSIZE 80
 #define PORT 5000
@@ -251,15 +252,14 @@ void* BroadCast(void* data){
 	return (void*)1;
 }
 
-
-
-
-
-
-	
-
 int main(void)
 {
+	
+	//char tmpMessage[MAXMESSAGEBUFFER] = {};
+	
+	//sprintf(tmpMessage,"%d|172.168.20.22|[mikee]|>>|AAAAAAA|AA|K+DS", 15);
+	//printf("%s\n", tmpMessage);
+	//parseMessage(tmpMessage);
 	
 	/*
 	* SETUP THE MASTERLIST
@@ -364,6 +364,8 @@ int main(void)
 	joinStatus = pthread_join(broadcastThreadID, NULL);
 
 	close(serverSocket);
+
+
 
 	return 0;
 }
