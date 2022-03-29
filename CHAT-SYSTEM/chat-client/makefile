@@ -4,7 +4,7 @@
 # link object files into final binary
 
 ./bin/chat-client: ./obj/chat-client.o ./obj/ipc-client.o
-	cc ./obj/chat-client.o	-lncurses ./obj/ipc-client.o -o ./bin/chat-client
+	cc ./obj/chat-client.o	-lncurses ./obj/ipc-client.o -o ./bin/chat-client -lpthread
 
 # get the desired file you want to generate an object file
 # compile the file from src folder and enter where you want it generated in the directory
