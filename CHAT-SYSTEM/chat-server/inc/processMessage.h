@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "../inc/MasterList.h"
 
 
 #define TRUE 1
@@ -24,6 +25,8 @@
 #define DELiMETERSIZE 3
 #define MESSAGEDIRECTIONBUFFER 4
 #define MAXUSERLENGTH 8
-int parseMessage(char* message);
 
+
+int parseMessage(char* message);
 void getUserMessage(char* message, char* msg);
+int checkExistingCLients(char* incomingIp, CLIENTINFO* client);

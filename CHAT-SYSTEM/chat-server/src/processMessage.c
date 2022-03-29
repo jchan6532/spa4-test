@@ -39,10 +39,10 @@ int parseMessage(char* message)
 
 		switch(splitCounter)
 		{
-
 			case 2:
 				// DO some stuff
 				strcpy(userIp, token);
+				// with this ip check to see if the client exists
 				printf("%s %d\n", token, splitCounter);
 				break;
 			case 3:
@@ -62,7 +62,6 @@ int parseMessage(char* message)
 
 		}
 	}
-	
 	printf("the message is %s", msg); 		
 	splitCounter = 0;
 	
@@ -91,5 +90,28 @@ void getUserMessage(char* message, char* msg)
 		}
 	}
 }
+
+int checkExistingCLients(char* incomingIP, MASTERLIST* ml)
+{
+	for(int i = 0; i < MAXCLIENTS; i++)
+	{
+		if(strcmp(ml->CLIENTINFO[i], incomingIP) == 0 && ml->CLIENTINFO[i].isActive != OFFLINE)
+		{
+			// this means the ip exists in the user is returning 
+		}
+		// OFFLINE MIGHT NOT EXIST IF NOT ADD IT
+		else if(ml->CLIENTINFO[i].isActive != OFFLINE)
+		{
+			// THIS IS CLIENT DOES NOT EXIST SO ADD IT TO THE MASTERLIST
+		}
+	}
+	
+}
+
+
+
+
+
+
 
 
