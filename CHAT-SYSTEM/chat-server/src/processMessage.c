@@ -100,7 +100,7 @@ int checkExistingCLients(char* incomingIP, MASTERLIST* ml)
 			// this means the ip exists in the user is returning 
 		}
 		// OFFLINE MIGHT NOT EXIST IF NOT ADD IT
-		else if(ml->CLIENTINFO[i].isActive != OFFLINE)
+		else if(strcmp(ml->CLIENTINFO[i], incomingIP) != 0 && ml->CLIENTINFO[i].isActive == OFFLINE)
 		{
 			// THIS IS CLIENT DOES NOT EXIST SO ADD IT TO THE MASTERLIST
 		}
