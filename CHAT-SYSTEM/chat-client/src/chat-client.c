@@ -185,10 +185,11 @@ int main(int argc, char* argv)
 
 
         if(buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
+        char tmpBuffer[128] = {};
         
+		sprintf(tmpBuffer,"%d|[%s]|<<|%s",(int)strlen(buffer),userID, buffer);
 
-
-        write(myserversocket, buffer, strlen(buffer));
+        write(myserversocket, tmpBuffer, strlen(tmpBuffer));
         // exit loop if user enters the exit command
         if (strcmp(buffer, ">>bye<<") == 0)
         {

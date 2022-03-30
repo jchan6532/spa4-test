@@ -157,13 +157,13 @@ void* DealWithClient(void* clientInfoPtr){
 				
 				/*NEED TO PARSE USERNAME HERE AND GET MESSAGE CONTENT*/
 				//strcpy(masterList.allClients[targetClientIndex].UserName, userName);
-				messageStatus = parseMessage(buffer, &masterList);
+				messageStatus = parseMessage(buffer, &masterList, clientInfo.IPAddress, clientMessage);
 				
 				/*ADD PARSED CLIENT MESSAGE TO THE LINKED LIST*/
 				MESSAGELIST* current = masterList.msgListHead;
 				if(current == NULL){
 					current = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
-					strcpy(current->Message, buffer);
+					strcpy(current->Message, clientMessage);
 					masterList.msgListHead = current;
 					current->next = NULL;
 				}
@@ -172,7 +172,7 @@ void* DealWithClient(void* clientInfoPtr){
 						if(current->next == NULL){
 							current->next = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
 							current = current->next;
-							strcpy(current->Message, buffer);
+							strcpy(current->Message, clientMessage);
 							current->next = NULL;
 							break;
 						}

@@ -8,7 +8,7 @@
 #include "../inc/processMessage.h"
 
 
-int parseMessage(char* message, MASTERLIST* ml)
+int parseMessage(char* message, MASTERLIST* ml, char* IncomingIp, char* outgoingMessage)
 {
 
 	// Create some variables that are used to create constants for delimeter
@@ -39,20 +39,13 @@ int parseMessage(char* message, MASTERLIST* ml)
 
 		switch(splitCounter)
 		{
+			
 			case 2:
-				// DO some stuff
-				strcpy(userIp, token);
-				// with this ip check to see if the client exist
-				
-				printf("%s %d\n", token, splitCounter);
-				break;
-			case 3:
-
 				strcpy(user, token);
 				printf("%s %d\n", token, splitCounter);
 				// DO some stuff
 				break;
-			case 4:
+			case 3:
 				strcpy(directionOfMessage, token);
 				printf("%s %d\n", token, splitCounter);
 				// DO some stuff
@@ -63,7 +56,8 @@ int parseMessage(char* message, MASTERLIST* ml)
 
 		}
 	}
-	printf("the message is %s", msg); 		
+	printf("the message is %s", msg);
+	sprintf(outgoingMessage,"%s %s << %s (04:19:59)", IncomingIp, user, msg); 		
 	splitCounter = 0;
 	
 	return 0;
@@ -81,15 +75,14 @@ void getUserMessage(char* message, char* msg)
 		if(message[i] == '|' && messageDelimCounter != MAXDELIMSPERMESSAGE)
 		{
 			messageDelimCounter++;
-			printf("%d HEY\n", messageDelimCounter);
 		}
 		if(messageDelimCounter == MAXDELIMSPERMESSAGE)
 		{
-			printf("%c \n", message[i + 1]);
 			strncpy(msg, message + i + 1, messageLength - i);
 			break;
 		}
 	}
+	printf("%s\n", msg);
 }
 
 int checkExistingCLients(char* incomingIP, MASTERLIST* ml)

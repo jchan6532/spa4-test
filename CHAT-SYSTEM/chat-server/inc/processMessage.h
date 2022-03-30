@@ -18,7 +18,7 @@
 #define DELIMSIZE 16
 
 
-#define MAXDELIMSPERMESSAGE 4
+#define MAXDELIMSPERMESSAGE 3
 #define MAXMESSAGESIZE 81
 #define MESSAGESIZEPERPACKET 41
 #define IPLENGTH 16
@@ -28,7 +28,7 @@
 #define MAXUSERLENGTH 8
 
 
-int parseMessage(char* message, MASTERLIST* ml);
+int parseMessage(char* message, MASTERLIST* ml, char* IncomingIp, char* outgoingMessage);
 void getUserMessage(char* message, char* msg);
 int checkExistingCLients(char* incomingIp, MASTERLIST* ml);
 
