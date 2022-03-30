@@ -17,7 +17,8 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-#include "../inc/MasterList.h"
+
+//#include "../inc/MasterList.h"
 #include "../inc/processMessage.h"
 
 #define BUFFERSIZE 80
@@ -128,11 +129,14 @@ void* DealWithClient(void* clientInfoPtr){
 	bool clientEndedConvo = false;
 	char buffer[BUFFERSIZE];
 	char userName[6] = "";
+	int messageStatus = 0;
 	int bytesRead = 0;
 	char clientMessage[41];
 	
+	
 	while(clientEndedConvo == false){
 		memset(buffer, 0, BUFFERSIZE);
+		
 		//memset(clientMessage, 0, 41);
 		
 		bytesRead = read(clientSocket, buffer, BUFFERSIZE);
@@ -150,8 +154,10 @@ void* DealWithClient(void* clientInfoPtr){
 			else{
 				BusyWaitForMasterList();
 				
+				
 				/*NEED TO PARSE USERNAME HERE AND GET MESSAGE CONTENT*/
 				//strcpy(masterList.allClients[targetClientIndex].UserName, userName);
+				messageStatus = parseMessage(buffer, &masterList);
 				
 				/*ADD PARSED CLIENT MESSAGE TO THE LINKED LIST*/
 				MESSAGELIST* current = masterList.msgListHead;

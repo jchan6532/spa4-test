@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 #include "../inc/MasterList.h"
 
 
@@ -27,6 +28,8 @@
 #define MAXUSERLENGTH 8
 
 
-int parseMessage(char* message);
+int parseMessage(char* message, MASTERLIST* ml);
 void getUserMessage(char* message, char* msg);
-int checkExistingCLients(char* incomingIp, CLIENTINFO* client);
+int checkExistingCLients(char* incomingIp, MASTERLIST* ml);
+
+

@@ -8,7 +8,7 @@
 #include "../inc/processMessage.h"
 
 
-int parseMessage(char* message)
+int parseMessage(char* message, MASTERLIST* ml)
 {
 
 	// Create some variables that are used to create constants for delimeter
@@ -42,7 +42,8 @@ int parseMessage(char* message)
 			case 2:
 				// DO some stuff
 				strcpy(userIp, token);
-				// with this ip check to see if the client exists
+				// with this ip check to see if the client exist
+				
 				printf("%s %d\n", token, splitCounter);
 				break;
 			case 3:
@@ -95,13 +96,9 @@ int checkExistingCLients(char* incomingIP, MASTERLIST* ml)
 {
 	for(int i = 0; i < MAXCLIENTS; i++)
 	{
-		if(strcmp(ml->CLIENTINFO[i], incomingIP) == 0 && ml->CLIENTINFO[i].isActive != OFFLINE)
+		 if(strcmp(ml->allClients[i].IPAddress, incomingIP) != 0 && ml->allClients[i].isActive == false)
 		{
-			// this means the ip exists in the user is returning 
-		}
-		// OFFLINE MIGHT NOT EXIST IF NOT ADD IT
-		else if(strcmp(ml->CLIENTINFO[i], incomingIP) != 0 && ml->CLIENTINFO[i].isActive == OFFLINE)
-		{
+			//CHECK IF THERE IS SPACE ADD IT TO THE SERVER
 			// THIS IS CLIENT DOES NOT EXIST SO ADD IT TO THE MASTERLIST
 		}
 	}
