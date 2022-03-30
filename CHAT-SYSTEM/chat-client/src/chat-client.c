@@ -227,7 +227,66 @@ int main(int argc, char* argv)
 
 int parseArguments(int argc, char* firstArg, char* secondArg, struct sockaddr_in* server_address, struct hostent** host, char* userID, char* serverName)
 {
+    struct hostent *he;
+    struct in_addr **addr_list;
+
+    // check argcs
+    if(argc != 3)
+    {
+        return 1;
+    }
+
+    char * user_i = "-user";
+    char* server_i = "-server";
+    int user_len = strlen(user_i);
+    int server_len = strlen(server_i);
+
+    if(strlen(firstArg) <= user_len || strlen(firstArg) > user_len + 5 ){
+        return 1;
+    }
+
+    if(strlen(secondArg) <= server_len){
+        return 1;
+    }
+
+    userID = strdup(firstArg + user_len);
+    serverName = strdup(secondArg + server_len);
+
     return 0;
+}
+
+// thread function for outgoing message handling 
+void* SendToServer(void* params) 
+{
+  ServerParam s = (ServerParam) params;
+  int client_sock;
+  struct sockaddr_in server;
+  char message[1000], server_reply[2000];
+
+  //Create socket
+  client_sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (client_sock < 0) {
+      perror("Error creating socket");
+      return NULL;
+  }
+
+  server.sin_addr.s_addr = inet_addr("127.0.0.1");
+  server.sin_family = AF_INET;
+  server.sin_port = htons(8888);
+
+  //Connect to remote server
+  if (connect(client_sock, (struct sockaddr *) s->server_ptr, sizeof(struct sockaddr_in)) < 0) {
+      perror("connecting to server fails");
+      return NULL;
+  }
+
+
+  //send message to server
+  if (send(client_sock, message, strlen(message), 0) < 0) {
+      perror("fail to send message");
+  }
+
+  return NULL;
 }
 
 
