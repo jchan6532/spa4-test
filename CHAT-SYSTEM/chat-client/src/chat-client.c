@@ -152,7 +152,6 @@ int main(int argc, char* argv)
 
     // attempt socket connection
     displayWindow(msg_win, "[CLIENT] : Connecting to server", 0, 1);
-    displayWindow(msg_win, clienthost, 1, 0);
     sleep(2);
     fflush(stdout);
     if (connect(myserversocket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0)
@@ -181,13 +180,25 @@ int main(int argc, char* argv)
         // handle message input newline character
         if(buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
         
-
-        // attach headers / footers to message for server
         int messageLength = strlen(buffer);
-        char* messageToServer = composeMessage(buffer, messageLength, userID);
 
-        // sends message to server
-        write(myserversocket, buffer, strlen(buffer));
+        // check if message length is greater than 40
+        if (messageLength > MAX_MSG_PACKET_LENGTH)
+        {
+            char* firstPacket = (char*)malloc(MAX_MSG_PACKET_LENGTH);
+            char* secondPacket = (char*)malloc((int)MAX_MSG_PACKET_LENGTH - messageLength);
+            makeMessagePackets(buffer, messageLength, &firstPacket, &secondPacket);
+        }
+        else
+        {
+            
+            // attach headers / footers to message for server
+            char* messageToServer = composeMessage(buffer, messageLength, userID, clienthost);
+            // sends message to server
+            write(myserversocket, messageToServer, strlen(messageToServer));
+        }
+
+
 
 
         // exit loop if user enters the exit command
@@ -325,8 +336,50 @@ void blankWindow(WINDOW *win)
   wrefresh(win);
 }  /* blankWin */
 
+// creates the message for the server with the delimiters
 
-char* composeMessage(char* buffer, int messageLength, char* userID)
+// structure:
+// ip|[username]|>>|message
+char* composeMessage(char* buffer, int messageLength, char* userID, char* clientIP)
 {
-  return "";
+  char* messageToServer = (char*)malloc(MSG_TO_SERVER_SIZE + NULL_TERMINATION); // 67 chars - IP|[user]|>>|message (max 40 chars)
+
+
+
+  // add client ip address
+  strcat(messageToServer, clientIP);
+
+  strcat(messageToServer, "|[");
+  strcat(messageToServer, userID);
+  strcat(messageToServer, "]|>>|");
+  strcat(messageToServer, buffer);
+
+
+  
+  return messageToServer;
 }
+
+
+// splits up longer message into two separate 40 char packets
+void makeMessagePackets(char* buffer, int messageLength, char* firstPacket, char* secondPacket)
+{
+
+
+  if (buffer[MAX_MSG_PACKET_LENGTH - NULL_TERMINATION] == " ")
+  {
+      // copy the partial buffer into the first packet
+      strncpy(firstPacket, buffer, MAX_MSG_PACKET_LENGTH - NULL_TERMINATION);
+      strcat(firstPacket, "\0");
+
+      // copy the rest of the buffer into the second packet
+      strncpy(secondPacket, &buffer[MAX_MSG_PACKET_LENGTH], MAX_MSG_PACKET_LENGTH - NULL_TERMINATION);
+      strcat(secondPacket, "\0");
+  }
+  else
+  {
+      // find last space before max packet length is reached
+       
+
+  }
+}
+
