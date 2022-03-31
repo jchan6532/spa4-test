@@ -28,8 +28,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-#include <ifaddrs.h>
 #include <pthread.h>
+#include <signal.h>
+#include <errno.h>
 
 #include "../inc/chat-client.h"
 
@@ -74,6 +75,28 @@ void* acceptServerMsgs(void* data){
     return (void*)1;
 }
 
+
+
+
+
+// handling message window view
+// moved these to global variables to make sure signal handler could close them if needed
+WINDOW *chat_win, *msg_win;
+
+// needed to handle when client exits, makes sure the windows are destroyed after any seg faults etc.
+void clientExitSignalHandler(int signal_number)
+{
+    
+    
+    delwin(chat_win);
+    delwin(msg_win);
+    endwin();
+    printf("Error: %s\n", strerror(errno));
+    exit(1);
+}
+
+// function for outgoing messages
+
 int main(int argc, char* argv)
 {
     end = false;
@@ -86,44 +109,10 @@ int main(int argc, char* argv)
     struct hostent* host;
     char buffer[CHAT_MSG_BUFFER];
 
-    struct ifaddrs *ifaddr, *ifa;
-    int family, s;
-    char clienthost[NI_MAXHOST];
-
-
-    // get all of the ip addresses assoc with client
-    if(getifaddrs(&ifaddr) == -1)
-    {
-      printf("error getting ip address\n");
-      return -1;
-    }
-
-    // iterate through until you get the default ip address
-    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next)
-    {
-      if (ifa->ifa_next == NULL)
-      {
-        continue;
-      }
-
-      s=getnameinfo(ifa->ifa_addr, sizeof(struct sockaddr_in), clienthost, NI_MAXHOST, NULL, 0, NI_NUMERICHOST);
-
-      // check if address connected is the default ens33
-      if ((strcmp(ifa->ifa_name, "ens33")==0) && (ifa->ifa_addr->sa_family == AF_INET))
-      {
-          if (s!= 0)
-          {
-            printf("error getting ip address\n");
-            return -1;
-          }
-
-      }
-
-    }
-
-    // free the memory
-    freeifaddrs(ifaddr);
-
+    // if an error occurs, this makes sure the window exits correctly
+    signal(SIGTERM, clientExitSignalHandler);
+    signal(SIGSEGV, clientExitSignalHandler);
+    signal(SIGINT, clientExitSignalHandler);
   // not enough args
     /*if (argc != 3)
     {
@@ -136,8 +125,7 @@ int main(int argc, char* argv)
 
     parseArguments(argc, &argv[1], &argv[2], &server_address, &host, userID, serverName);
 
-    // handling message window view
-    WINDOW *chat_win, *msg_win;
+
     int chat_startx, chat_starty, chat_width, chat_height;
     int msg_startx, msg_starty, msg_width, msg_height, i;
     int shouldBlank;
@@ -198,23 +186,23 @@ int main(int argc, char* argv)
     displayWindow(msg_win, "[CLIENT] : Connecting to server", 0, 1);
     sleep(2);
     fflush(stdout);
-    if (connect(myserversocket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0)
-    {
-        displayWindow(msg_win, "[CLIENT] : Connect to server - FAILED", 1, 0);
-        sleep(5);
-        delwin(chat_win);
-        delwin(msg_win);
-        endwin();
-        close(myserversocket);
-        return 4;
-    }
+    // if (connect(myserversocket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0)
+    // {
+    //     displayWindow(msg_win, "[CLIENT] : Connect to server - FAILED", 1, 0);
+    //     sleep(5);
+    //     delwin(chat_win);
+    //     delwin(msg_win);
+    //     endwin();
+    //     close(myserversocket);
+    //     return 4;
+    // }
     
-    THREADDATA threadData;
-    threadData.socketNumber = myserversocket;
-    threadData.msgWin = msg_win;
-    pthread_t readingThreadID;
-    pthread_create(&readingThreadID, NULL, acceptServerMsgs, (void*)&threadData);
-    usleep(10);
+    // THREADDATA threadData;
+    // threadData.socketNumber = myserversocket;
+    // threadData.msgWin = msg_win;
+    // pthread_t readingThreadID;
+    // pthread_create(&readingThreadID, NULL, acceptServerMsgs, (void*)&threadData);
+    // usleep(10); 
 
     done =1;
     memset(buffer, 0, CHAT_MSG_BUFFER);
@@ -238,15 +226,29 @@ int main(int argc, char* argv)
         {
             char* firstPacket = (char*)malloc(MAX_MSG_PACKET_LENGTH);
             char* secondPacket = (char*)malloc((int)MAX_MSG_PACKET_LENGTH - messageLength);
-            makeMessagePackets(buffer, messageLength, &firstPacket, &secondPacket);
+            makeMessagePackets(buffer, messageLength, firstPacket, secondPacket);
+
+            char* firstPacketMessageToServer = composeMessage(firstPacket, MAX_MSG_PACKET_LENGTH, userID);
+            //write(myserversocket, firstPacketMessageToServer, strlen(firstPacketMessageToServer));
+            displayWindow(msg_win, firstPacketMessageToServer, rowCount++, 0);
+            char* secondPacketMessageToServer = composeMessage(secondPacket, strlen(secondPacket), userID);
+            //write(myserversocket, secondPacketMessageToServer, strlen(secondPacketMessageToServer));
+            displayWindow(msg_win, secondPacketMessageToServer, rowCount++, 0);
+
+            free(firstPacketMessageToServer);
+            free(firstPacket);
+            free(secondPacket);
+            free(secondPacketMessageToServer);
         }
         else
         {
             
             // attach headers / footers to message for server
-            char* messageToServer = composeMessage(buffer, messageLength, userID, clienthost);
+            char* messageToServer = composeMessage(buffer, messageLength, userID);
             // sends message to server
-            write(myserversocket, messageToServer, strlen(messageToServer));
+            //write(myserversocket, messageToServer, strlen(messageToServer));
+            displayWindow(msg_win, messageToServer, rowCount++, 0);
+            free(messageToServer);
         }
 
 
@@ -274,8 +276,10 @@ int main(int argc, char* argv)
         //rowCount++;
     }
     
-    int joinStatus = 0;
-    joinStatus = pthread_join(readingThreadID, NULL);
+
+    // // join the incoming message thread
+    // int joinStatus = 0;
+    // joinStatus = pthread_join(readingThreadID, NULL);
 
 
     close(myserversocket);
@@ -394,16 +398,19 @@ void blankWindow(WINDOW *win)
 // creates the message for the server with the delimiters
 
 // structure:
-// ip|[username]|>>|message
-char* composeMessage(char* buffer, int messageLength, char* userID, char* clientIP)
+// messagelength|[username]|>>|message
+char* composeMessage(char* buffer, int messageLength, char* userID)
 {
-  char* messageToServer = (char*)malloc(MSG_TO_SERVER_SIZE + NULL_TERMINATION); // 67 chars - IP|[user]|>>|message (max 40 chars)
+  char* messageToServer = (char*)malloc(MSG_TO_SERVER_SIZE + NULL_TERMINATION); 
+  // 53 chars - messageLength|[user]|>>|message (max 40 chars)
 
 
+  // add messagelength
+  char messageLenStr[3] = "";
+  sprintf(messageLenStr, "%d", messageLength);
 
-  // add client ip address
-  strcat(messageToServer, clientIP);
 
+  strcpy(messageToServer, messageLenStr);
   strcat(messageToServer, "|[");
   strcat(messageToServer, userID);
   strcat(messageToServer, "]|>>|");
@@ -420,7 +427,7 @@ void makeMessagePackets(char* buffer, int messageLength, char* firstPacket, char
 {
 
 
-  if (buffer[MAX_MSG_PACKET_LENGTH - NULL_TERMINATION] == " ")
+  if (buffer[MAX_MSG_PACKET_LENGTH - NULL_TERMINATION] == ' ')
   {
       // copy the partial buffer into the first packet
       strncpy(firstPacket, buffer, MAX_MSG_PACKET_LENGTH - NULL_TERMINATION);
@@ -433,7 +440,24 @@ void makeMessagePackets(char* buffer, int messageLength, char* firstPacket, char
   else
   {
       // find last space before max packet length is reached
-       
+
+      int lastSpaceIndex = 39;
+      for (int i=0; i<MAX_MSG_PACKET_LENGTH; i++)
+      {
+          if (buffer[i] == ' ')
+          {
+              lastSpaceIndex = i;
+          }
+      } 
+
+      int maxFirstPacketLength = lastSpaceIndex;
+      strncpy(firstPacket, buffer, maxFirstPacketLength);
+      strcat(firstPacket, "\0");
+
+      strncpy(secondPacket, &buffer[lastSpaceIndex], MAX_MSG_PACKET_LENGTH - maxFirstPacketLength);
+      strcat(secondPacket, "\0");
+
+
 
   }
 }
