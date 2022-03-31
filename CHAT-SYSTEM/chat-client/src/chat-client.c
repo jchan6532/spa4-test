@@ -187,23 +187,23 @@ int main(int argc, char* argv)
     displayWindow(msg_win, "[CLIENT] : Connecting to server", 0, 1);
     //sleep(2);
     fflush(stdout);
-    // if (connect(myserversocket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0)
-    // {
-    //     displayWindow(msg_win, "[CLIENT] : Connect to server - FAILED", 1, 0);
-    //     sleep(5);
-    //     delwin(chat_win);
-    //     delwin(msg_win);
-    //     endwin();
-    //     close(myserversocket);
-    //     return 4;
-    // }
+    if (connect(myserversocket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0)
+    {
+        displayWindow(msg_win, "[CLIENT] : Connect to server - FAILED", 1, 0);
+        sleep(5);
+        delwin(chat_win);
+        delwin(msg_win);
+        endwin();
+        close(myserversocket);
+        return 4;
+    }
     
-    // THREADDATA threadData;
-    // threadData.socketNumber = myserversocket;
-    // threadData.msgWin = msg_win;
-    // pthread_t readingThreadID;
-    // pthread_create(&readingThreadID, NULL, acceptServerMsgs, (void*)&threadData);
-    // usleep(10); 
+    THREADDATA threadData;
+    threadData.socketNumber = myserversocket;
+    threadData.msgWin = msg_win;
+    pthread_t readingThreadID;
+    pthread_create(&readingThreadID, NULL, acceptServerMsgs, (void*)&threadData);
+    usleep(10); 
 
     done =1;
     memset(buffer, 0, CHAT_MSG_BUFFER);
@@ -280,9 +280,9 @@ int main(int argc, char* argv)
     }
     
 
-    // // join the incoming message thread
-    // int joinStatus = 0;
-    // joinStatus = pthread_join(readingThreadID, NULL);
+    // join the incoming message thread
+    int joinStatus = 0;
+    joinStatus = pthread_join(readingThreadID, NULL);
 
 
     close(myserversocket);
@@ -366,6 +366,7 @@ void inputMessage(WINDOW *win, char *word)
             {
 
               wmove(win, row, col-=2);
+              wclrtoeol(win);
               wrefresh(win);
               
             }
