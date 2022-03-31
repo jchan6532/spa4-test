@@ -29,11 +29,55 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <ifaddrs.h>
+#include <pthread.h>
 
 #include "../inc/chat-client.h"
 
+typedef struct threadInfoStruct {
+    int socketNumber;
+    WINDOW* msgWin;
+} THREADDATA;
+
+bool end;
+
+void* acceptServerMsgs(void* data){
+    THREADDATA threadData = *((THREADDATA*)data);
+    struct timeval timeout;
+    timeout.tv_sec = 5; // sec
+    timeout.tv_usec = 0; // ms
+    
+    char buffer[CHAT_MSG_BUFFER];
+    int len;
+    int rowCount = 1;
+    
+    while(1){
+        setsockopt (threadData.socketNumber, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
+        
+        memset(buffer, 0, CHAT_MSG_BUFFER);
+        len = read (threadData.socketNumber, buffer, CHAT_MSG_BUFFER);
+        if(len > 0){
+            rowCount++;
+            displayWindow(threadData.msgWin, buffer, rowCount, 0);
+            fflush(stdout);
+            rowCount++;
+        }
+        len = 0;
+        
+        usleep(1);
+        
+        if(end == true){
+            break;
+        }
+    }
+    
+    pthread_exit((void*)1);
+    return (void*)1;
+}
+
 int main(int argc, char* argv)
 {
+    end = false;
+    
     int myserversocket, len, done;
     int whichClient;
     char* userID = "Erica"; // client name
@@ -164,6 +208,13 @@ int main(int argc, char* argv)
         close(myserversocket);
         return 4;
     }
+    
+    THREADDATA threadData;
+    threadData.socketNumber = myserversocket;
+    threadData.msgWin = msg_win;
+    pthread_t readingThreadID;
+    pthread_create(&readingThreadID, NULL, acceptServerMsgs, (void*)&threadData);
+    usleep(10);
 
     done =1;
     memset(buffer, 0, CHAT_MSG_BUFFER);
@@ -204,23 +255,27 @@ int main(int argc, char* argv)
         // exit loop if user enters the exit command
         if (strcmp(buffer, ">>bye<<") == 0)
         {
+            end = true;
             break;
         }
         
-        memset(buffer, 0, CHAT_MSG_BUFFER);
-        len = read (myserversocket, buffer, CHAT_MSG_BUFFER);
+        //memset(buffer, 0, CHAT_MSG_BUFFER);
+        //len = read (myserversocket, buffer, CHAT_MSG_BUFFER);
         /*char* msgReceived = (char*)malloc(sizeof(buffer) + strlen(">> "));
         strcpy(msgReceived, "<< ");
         strcat(msgReceived, buffer);*/
-        rowCount++;
+        //rowCount++;
         
         // moves the sent text to the upper chat window
-        displayWindow(msg_win, buffer, rowCount, 0);
+        //displayWindow(msg_win, buffer, rowCount, 0);
 
 
-        fflush(stdout);
-        rowCount++;
+        //fflush(stdout);
+        //rowCount++;
     }
+    
+    int joinStatus = 0;
+    joinStatus = pthread_join(readingThreadID, NULL);
 
 
     close(myserversocket);

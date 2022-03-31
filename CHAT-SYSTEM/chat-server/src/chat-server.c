@@ -30,6 +30,29 @@ bool messageListInUse;
 
 
 
+void Show(){
+	MESSAGELIST* current = masterList.msgListHead;
+	system("clear");
+	sleep(1);
+	do{
+		if(current != NULL){
+			printf("%s\n", current->Message);
+			current = current->next;
+		}
+		
+		if(current == NULL){
+			printf("null\n");
+			break;
+		}
+	}while(1);
+	sleep(1);
+	
+	return;
+}
+
+
+
+
 void InitializeMasterList(void){
 	int i = 0;
 	
@@ -81,6 +104,7 @@ void* DealWithClient(void* clientInfoPtr){
 	BusyWaitForMasterList();
 	
 	masterList.numClients++;
+	printf("107\n");
 	masterList.highestClientID++;
 	for(i=0;i<MAXCLIENTS;i++){
 		if(masterList.allClients[i].isActive == false){
@@ -108,11 +132,10 @@ void* DealWithClient(void* clientInfoPtr){
 	
 	while(clientEndedConvo == false){
 		memset(buffer, 0, BUFFERSIZE);
-		memset(clientMessage, 0, 41);
+		//memset(clientMessage, 0, 41);
 		
 		bytesRead = read(clientSocket, buffer, BUFFERSIZE);
 		if (bytesRead > 0) {
-			//printf("%s\n", buffer);
 			if(strcmp(buffer, "bye") == 0){
 					
 				BusyWaitForMasterList();
@@ -127,30 +150,35 @@ void* DealWithClient(void* clientInfoPtr){
 				BusyWaitForMasterList();
 				
 				/*NEED TO PARSE USERNAME HERE AND GET MESSAGE CONTENT*/
-				strcpy(masterList.allClients[targetClientIndex].UserName, userName);
+				//strcpy(masterList.allClients[targetClientIndex].UserName, userName);
 				
 				/*ADD PARSED CLIENT MESSAGE TO THE LINKED LIST*/
 				MESSAGELIST* current = masterList.msgListHead;
-				while(current != NULL){
-					if(current != NULL){
-						current = current->next;
-					}
-					else{
-						current = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
-						strcpy(current->Message, buffer);
-					}
+				if(current == NULL){
+					current = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
+					strcpy(current->Message, buffer);
+					masterList.msgListHead = current;
+					current->next = NULL;
+				}
+				else{
+					do{
+						if(current->next == NULL){
+							current->next = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
+							current = current->next;
+							strcpy(current->Message, buffer);
+							current->next = NULL;
+							break;
+						}
+						else{
+							current = current->next;
+						}
+					}while(1);
 				}
 				
 				masterListInUse = false;
 				
 			}
 		}
-		/*
-		else{
-			pthread_exit((void*)-1);
-			return -1;
-		}
-		*/
 	}
 	
 	pthread_exit((void*)1);
@@ -169,34 +197,47 @@ void* BroadCast(void* data){
 	bool stopBroadcasting = false;
 	int i = 0;
 	MESSAGELIST* currentMsg = NULL;
-	MESSAGELIST* previousMsg = NULL;
+	MESSAGELIST* next = NULL;
+	usleep(100);
 	
 	while(stopBroadcasting == false){
 		if(masterList.numClients <= 0){
+			printf("203\n");
 			stopBroadcasting = true;
 		}
 		
 		if(stopBroadcasting == false){
 			currentMsg = masterList.msgListHead;
-			while(currentMsg != NULL){
-				for(i=0;i<MAXCLIENTS;i++){
-					if(masterList.allClients[i].isActive == true){
-						write(masterList.allClients[i].clientSocket, currentMsg->Message, strlen(currentMsg->Message));
+			do{
+				if(currentMsg != NULL){
+					for(i=0;i<MAXCLIENTS;i++){
+						if(masterList.allClients[i].isActive == true){
+							write(masterList.allClients[i].clientSocket, currentMsg->Message, strlen(currentMsg->Message));
+						}
 					}
+					printf("SENT: %s\n", currentMsg->Message);
+					currentMsg = currentMsg->next;
 				}
-				currentMsg = currentMsg->next;
+				else{
+					break;
+				}
 				usleep(1);
-			}
+			}while(1);
+			
 			
 			BusyWaitForMasterList();
 			
 			currentMsg = masterList.msgListHead;
-			while(currentMsg != NULL){
-				previousMsg = currentMsg;
-				currentMsg = currentMsg->next;
-				free(previousMsg);
-				previousMsg = NULL;
-			}
+			do{
+				if(currentMsg != NULL){
+					next = currentMsg->next;
+					free(currentMsg);
+					currentMsg = next;
+				}
+				else{
+					break;
+				}
+			}while(1);
 			
 			masterList.msgListHead = NULL;
 			masterListInUse = false;
@@ -294,7 +335,7 @@ int main(void)
 
 		
 		pthread_create(&(clientThreadIDs[i-1]), NULL, DealWithClient, (void*)&connectingClient);
-		usleep(10);
+		//usleep(100);
 		if(initialBroadcast == true){
 			pthread_create(&broadcastThreadID, NULL, BroadCast, NULL);
 			initialBroadcast = false;
