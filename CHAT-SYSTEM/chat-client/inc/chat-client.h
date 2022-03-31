@@ -30,7 +30,7 @@ void inputMessage(WINDOW *win, char *word);
 void blankWindow(WINDOW *win);
 void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank);
 char* composeMessage(char* buffer, int messageLength, char* userID);
-void makeMessagePackets(WINDOW *win, char* buffer, int messageLength, char* firstPacket, char* secondPacket);
+void makeMessagePackets(char* buffer, int messageLength, char* firstPacket, char* secondPacket);
 
 
 #endif

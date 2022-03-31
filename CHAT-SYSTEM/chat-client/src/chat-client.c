@@ -214,7 +214,7 @@ int main(int argc, char* argv)
     while(done)
     {
         inputMessage(chat_win, buffer);
-        displayWindow(msg_win, buffer, rowCount, 0);
+        //displayWindow(msg_win, buffer, rowCount, 0);
         fflush(stdout);
 
         // handle message input newline character
@@ -228,14 +228,14 @@ int main(int argc, char* argv)
         {
             char* firstPacket = (char*)malloc(MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
             char* secondPacket = (char*)malloc(messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
-            makeMessagePackets(msg_win, buffer, messageLength, firstPacket, secondPacket);
+            makeMessagePackets(buffer, messageLength, firstPacket, secondPacket);
 
 
             char* firstPacketMessageToServer = composeMessage(firstPacket, MAX_MSG_PACKET_LENGTH, userID);
-            //write(myserversocket, firstPacketMessageToServer, strlen(firstPacketMessageToServer));
+            write(myserversocket, firstPacketMessageToServer, strlen(firstPacketMessageToServer));
             //displayWindow(msg_win, firstPacketMessageToServer, rowCount++, 0);
             char* secondPacketMessageToServer = composeMessage(secondPacket, strlen(secondPacket), userID);
-            //write(myserversocket, secondPacketMessageToServer, strlen(secondPacketMessageToServer));
+            write(myserversocket, secondPacketMessageToServer, strlen(secondPacketMessageToServer));
             //displayWindow(msg_win, secondPacketMessageToServer, rowCount++, 0);
 
             free(firstPacketMessageToServer);
@@ -249,7 +249,7 @@ int main(int argc, char* argv)
             // attach headers / footers to message for server
             char* messageToServer = composeMessage(buffer, messageLength, userID);
             // sends message to server
-            //write(myserversocket, messageToServer, strlen(messageToServer));
+            write(myserversocket, messageToServer, strlen(messageToServer));
             //displayWindow(msg_win, messageToServer, rowCount++, 0);
             free(messageToServer);
         }
@@ -349,6 +349,8 @@ void inputMessage(WINDOW *win, char *word)
         else if (ch == KEY_BACKSPACE)
         {              // replace the end of the line with null term
             word[i-1] = '\0';
+            
+            
             i--;
             i--;
         }
@@ -365,10 +367,12 @@ void inputMessage(WINDOW *win, char *word)
             else if (ch == KEY_BACKSPACE)
             {
 
-              wmove(win, row, col-=2);
+              wmove(win, row, col--);
               wclrtoeol(win);
               wrefresh(win);
-              
+              wmove(win, row, col--);
+              wdelch(win);
+              wrefresh(win);
             }
         }
         // user has written enough characters to extend to second line of chat window
@@ -390,6 +394,22 @@ void inputMessage(WINDOW *win, char *word)
               wrefresh(win);
               wprintw(win, "%c", word[i]);    /* display the char recv'd */
             }
+        }
+    }
+
+    // should only accept a backspace character
+    else
+    {
+        if (ch == KEY_BACKSPACE)
+        {
+            word[i-1] = '\0';
+            
+            i--;
+            i--;
+
+            wmove(win, row, col-=2);
+            wclrtoeol(win);
+            wrefresh(win);
         }
     }
     
@@ -459,7 +479,7 @@ char* composeMessage(char* buffer, int messageLength, char* userID)
 
 
 // splits up longer message into two separate 40 char packets
-void makeMessagePackets(WINDOW* win, char* buffer, int messageLength, char* firstPacket, char* secondPacket)
+void makeMessagePackets(char* buffer, int messageLength, char* firstPacket, char* secondPacket)
 {
 
   // check if the last character in the buffer is a space 
@@ -468,12 +488,12 @@ void makeMessagePackets(WINDOW* win, char* buffer, int messageLength, char* firs
       // copy the partial buffer into the first packet
       strncpy(firstPacket, buffer, MAX_MSG_PACKET_LENGTH - NULL_TERMINATION);
       strcat(firstPacket, "\0");
-      displayWindow(win, firstPacket, 2, 1);
+      
 
       // copy the rest of the buffer into the second packet
       strncpy(secondPacket, &buffer[MAX_MSG_PACKET_LENGTH], messageLength - MAX_MSG_PACKET_LENGTH - NULL_TERMINATION);
       strcat(secondPacket, "\0");
-      displayWindow(win, secondPacket, 3, 0);
+      
   }
   else
   {
@@ -491,23 +511,23 @@ void makeMessagePackets(WINDOW* win, char* buffer, int messageLength, char* firs
           }
       } 
 
-      displayWindow(win, "In the loop portion: ", 0, 1);
+      
       int maxFirstPacketLength = lastSpaceIndex + ZERO_INDEX_ADJUSTMENT;
       char msgLastSpaceIndex[3] = "";
 
       sprintf(msgLastSpaceIndex, "%d", maxFirstPacketLength);
 
-      displayWindow(win, msgLastSpaceIndex, 1, 0);
+      
 
       // copies the first portion of the string into the first packet
       strncpy(firstPacket, buffer, maxFirstPacketLength);
       strcat(firstPacket, "\0");
-      displayWindow(win, firstPacket, 2, 0);
+      
 
 
       strncpy(secondPacket, &buffer[maxFirstPacketLength], messageLength - maxFirstPacketLength);
       strcat(secondPacket, "\0");
-      displayWindow(win, secondPacket, 3, 0);
+      
 
 
 
