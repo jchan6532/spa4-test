@@ -18,6 +18,9 @@
 #define MSG_TO_SERVER_SIZE 53
 #define NULL_TERMINATION 1
 #define MAX_MSG_PACKET_LENGTH 41
+#define NON_VISIBLE_ASCII_BOUNDARY 31
+#define DEL_CHAR_ASCII 127
+#define BACK_SPACE_ASCII 8
 
 
 int parseArguments(int, char*, char*, struct sockaddr_in*, struct hostent**, char*, char*);

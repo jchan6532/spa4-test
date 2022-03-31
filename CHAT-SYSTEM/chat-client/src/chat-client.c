@@ -86,8 +86,8 @@ WINDOW *chat_win, *msg_win;
 // needed to handle when client exits, makes sure the windows are destroyed after any seg faults etc.
 void clientExitSignalHandler(int signal_number)
 {
-    
-    
+    displayWindow(msg_win, "Exiting client...", 4, 0);
+    sleep(2);
     delwin(chat_win);
     delwin(msg_win);
     endwin();
@@ -119,8 +119,6 @@ int main(int argc, char* argv)
         printf("USAGE: chat-client.c -userID -serverName\n");
         return 1;
     }*/
-
-    printf("Client started...\n");
 
 
     parseArguments(argc, &argv[1], &argv[2], &server_address, &host, userID, serverName);
@@ -225,13 +223,15 @@ int main(int argc, char* argv)
         if (messageLength > MAX_MSG_PACKET_LENGTH)
         {
             char* firstPacket = (char*)malloc(MAX_MSG_PACKET_LENGTH);
-            char* secondPacket = (char*)malloc((int)MAX_MSG_PACKET_LENGTH - messageLength);
+            char* secondPacket = (char*)malloc(messageLength - (int)MAX_MSG_PACKET_LENGTH);
             makeMessagePackets(buffer, messageLength, firstPacket, secondPacket);
+            displayWindow(msg_win, firstPacket, 0, 1);
+            displayWindow(msg_win, secondPacket, 1, 0);
 
             char* firstPacketMessageToServer = composeMessage(firstPacket, MAX_MSG_PACKET_LENGTH, userID);
             //write(myserversocket, firstPacketMessageToServer, strlen(firstPacketMessageToServer));
             displayWindow(msg_win, firstPacketMessageToServer, rowCount++, 0);
-            char* secondPacketMessageToServer = composeMessage(secondPacket, strlen(secondPacket), userID);
+            char* secondPacketMessageToServer = composeMessage(secondPacket, strlen(secondPacket) + NULL_TERMINATION, userID);
             //write(myserversocket, secondPacketMessageToServer, strlen(secondPacketMessageToServer));
             displayWindow(msg_win, secondPacketMessageToServer, rowCount++, 0);
 
@@ -332,13 +332,38 @@ void inputMessage(WINDOW *win, char *word)
   getmaxyx(win, maxrow, maxcol);          /* get window size */
   bzero(word, CHAT_MSG_BUFFER);
   wmove(win, 1, 1);                       /* position cusor at top */
+
+  // this will keep getting input from the user until they press enter
   for (i = 0; (ch = wgetch(win)) != '\n'; i++) 
   {
-    word[i] = ch;                       /* '\n' not copied */
+    
+    
+    if (ch > NON_VISIBLE_ASCII_BOUNDARY && ch != DEL_CHAR_ASCII)
+    {
+        // adds character on the end
+        word[i] = ch;                       /* '\n' not copied */
+        
+    }
+    /*else if (ch == BACK_SPACE_ASCII)
+    {              // replace the end of the line with null term
+        wmove(win, row, col--);
+    }*/
+
+    // if user enters characters within the first line
     if (col++ < maxcol-2)               /* if within window */
     {
-      wprintw(win, "%c", word[i]);      /* display the char recv'd */
+      
+      // only display the character if it is visible
+      if (ch > NON_VISIBLE_ASCII_BOUNDARY && ch != DEL_CHAR_ASCII)
+      {
+        wprintw(win, "%c", word[i]);      /* display the char recv'd */
+      }
+      else if (ch == BACK_SPACE_ASCII)
+      {
+        wdelch(win);
+      }
     }
+    // user has written enough characters to extend to second line of chat window
     else                                /* last char pos reached */
     {
       col = 1;
@@ -432,10 +457,12 @@ void makeMessagePackets(char* buffer, int messageLength, char* firstPacket, char
       // copy the partial buffer into the first packet
       strncpy(firstPacket, buffer, MAX_MSG_PACKET_LENGTH - NULL_TERMINATION);
       strcat(firstPacket, "\0");
+      displayWindow(msg_win, firstPacket, 0, 1);
 
       // copy the rest of the buffer into the second packet
       strncpy(secondPacket, &buffer[MAX_MSG_PACKET_LENGTH], MAX_MSG_PACKET_LENGTH - NULL_TERMINATION);
       strcat(secondPacket, "\0");
+      displayWindow(msg_win, secondPacket, 1, 0);
   }
   else
   {
@@ -453,9 +480,11 @@ void makeMessagePackets(char* buffer, int messageLength, char* firstPacket, char
       int maxFirstPacketLength = lastSpaceIndex;
       strncpy(firstPacket, buffer, maxFirstPacketLength);
       strcat(firstPacket, "\0");
+      displayWindow(msg_win, firstPacket, 0, 1);
 
       strncpy(secondPacket, &buffer[lastSpaceIndex], MAX_MSG_PACKET_LENGTH - maxFirstPacketLength);
       strcat(secondPacket, "\0");
+      displayWindow(msg_win, secondPacket, 1, 0);
 
 
 
