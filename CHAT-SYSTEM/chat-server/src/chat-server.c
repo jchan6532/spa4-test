@@ -22,7 +22,7 @@
 #include "../inc/processMessage.h"
 #include "../inc/socketFunctions.h"
 
-#define BUFFERSIZE 53
+#define BUFFERSIZE 80
 #define PORT 5000
 
 
