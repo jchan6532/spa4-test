@@ -134,8 +134,6 @@ int main(int argc, char* argv[])
     }
 
 
-    parseArguments(argc, &argv[1], &argv[2], &server_address, &host, userID, serverName);
-
 
     int chat_startx, chat_starty, chat_width, chat_height;
     int msg_startx, msg_starty, msg_width, msg_height, i;
