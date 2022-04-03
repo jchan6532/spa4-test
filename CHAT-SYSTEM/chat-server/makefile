@@ -8,7 +8,7 @@
 # get the desired file you want to generate an object file
 # compile the file from src folder and enter where you want it generated in the directory
 
-./obj/chat-server.o:	./src/chat-server.c ./inc/processMessage.h
+./obj/chat-server.o:	./src/chat-server.c ./inc/processMessage.h ./inc/socketFunctions.h ./inc/MasterList.h
 	cc -c ./src/chat-server.c -o ./obj/chat-server.o
 
 ./obj/processMessage.o: ./src/processMessage.c ./inc/processMessage.h

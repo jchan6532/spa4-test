@@ -586,9 +586,11 @@ char* composeMessage(char* buffer, int messageLength, char* userID)
 
 
   strcpy(messageToServer, messageLenStr);
+  strcat(messageToServer, "|");
+  strcat(messageToServer, "127.0.0.1");
   strcat(messageToServer, "|[");
   strcat(messageToServer, userID);
-  strcat(messageToServer, "]|>>|");
+  strcat(messageToServer, "]|");
   strcat(messageToServer, buffer);
 
 

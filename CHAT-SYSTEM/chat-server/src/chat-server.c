@@ -18,8 +18,9 @@
 #include <stdlib.h>
 
 
-//#include "../inc/MasterList.h"
+#include "../inc/MasterList.h"
 #include "../inc/processMessage.h"
+#include "../inc/socketFunctions.h"
 
 #define BUFFERSIZE 53
 #define PORT 5000
@@ -31,7 +32,7 @@ bool messageListInUse;
 
 
 
-
+/************************ TO BE DUMPED********************/
 void Show(){
 	MESSAGELIST* current = masterList.msgListHead;
 	system("clear");
@@ -51,7 +52,7 @@ void Show(){
 	
 	return;
 }
-
+/*********************************************************/
 
 
 
@@ -61,10 +62,8 @@ void InitializeMasterList(void){
 	masterList.msgListHead = NULL;
 	masterList.numClients = 0;
 	masterList.numMsgInList = 0;
-	masterList.highestClientID = 0;
 	for(i=0;i<MAXCLIENTS; i++){
 		masterList.allClients[i].clientSocket = -1;
-		masterList.allClients[i].clientID = -1;
 		strcpy(masterList.allClients[i].IPAddress, "");
 		strcpy(masterList.allClients[i].UserName, "");
 		masterList.allClients[i].lastTimeUserSentMsg = NULL;
@@ -95,31 +94,42 @@ void BusyWaitForMasterList(void){
 
 
 
+void EmptyClientInfo(int targetIndex){
+	masterList.numClients--;
+	masterList.allClients[targetIndex].clientSocket = -1;
+	strcpy(masterList.allClients[targetIndex].IPAddress, "");
+	strcpy(masterList.allClients[targetIndex].UserName, "");
+	if(masterList.allClients[targetIndex].lastTimeUserSentMsg != NULL){
+		free(masterList.allClients[targetIndex].lastTimeUserSentMsg);
+	}
+	masterList.allClients[targetIndex].lastTimeUserSentMsg = NULL;
+	masterList.allClients[targetIndex].isActive = false;
+	
+	return;
+}
+
+
+
+
+
 
 
 void* DealWithClient(void* clientInfoPtr){
+	CLIENTINFO clientInfo = *((CLIENTINFO*)clientInfoPtr);
 	int i = 0;
 	int clientSocket = 0;
-	int targetClientIndex = 0;
-	CLIENTINFO clientInfo = *((CLIENTINFO*)clientInfoPtr);	//MAYBE SPLIT CLIENTINFO INTO SEPARATE PRIMITIVE DATATYPE VARIABLES, AND ASSIGN 1 BY 1
+	int targetClientIndex = checkExistingClients(&masterList);
 	
 	BusyWaitForMasterList();
 	
 	masterList.numClients++;
-	printf("107\n");
-	masterList.highestClientID++;
-	for(i=0;i<MAXCLIENTS;i++){
-		if(masterList.allClients[i].isActive == false){
-			targetClientIndex = i;
-			masterList.allClients[i].isActive = clientInfo.isActive;
-			masterList.allClients[i].clientID = clientInfo.clientID;	//QUESTIONABLE
-			masterList.allClients[i].clientSocket = clientInfo.clientSocket;
-			strcpy(masterList.allClients[i].UserName, clientInfo.UserName);
-			strcpy(masterList.allClients[i].IPAddress, clientInfo.IPAddress);
-			
-			clientSocket = masterList.allClients[i].clientSocket;
-			break;
-		}
+	if(targetClientIndex != NOMORESPACE){
+		masterList.allClients[targetClientIndex].isActive = clientInfo.isActive;
+		masterList.allClients[targetClientIndex].clientSocket = clientInfo.clientSocket;
+		strcpy(masterList.allClients[targetClientIndex].UserName, clientInfo.UserName);
+		strcpy(masterList.allClients[targetClientIndex].IPAddress, clientInfo.IPAddress);
+		
+		clientSocket = masterList.allClients[targetClientIndex].clientSocket;
 	}
 	
 	masterListInUse = false;
@@ -127,43 +137,42 @@ void* DealWithClient(void* clientInfoPtr){
 	
 	
 	bool clientEndedConvo = false;
-	char buffer[BUFFERSIZE];
-	char userName[6] = "";
-	int messageStatus = 0;
+	char buffer[BUFFERSIZE] = "";
+	char userName[6+2] = "";
+	char senderIP[16] = "";
+	char outgoingMessage[75] = "";
+	int arrowIndex = 0;
 	int bytesRead = 0;
-	char clientMessage[41];
 	
 	
 	while(clientEndedConvo == false){
 		memset(buffer, 0, BUFFERSIZE);
 		
-		//memset(clientMessage, 0, 41);
-		
 		bytesRead = read(clientSocket, buffer, BUFFERSIZE);
 		if (bytesRead > 0) {
-			if(strcmp(buffer, "bye") == 0){
+			printf("SENT: %s\n", buffer);
+			arrowIndex = parseMessage(buffer, senderIP, outgoingMessage, userName);
+			printf("OUTGOINGMESSAGE: %s\n", outgoingMessage);
+			if(arrowIndex == CLIENTSAID_ADIOS){
 					
 				BusyWaitForMasterList();
-				
-				masterList.numClients--;
-				/*CLEAR CLIENT LIST*/
-				
+				EmptyClientInfo(targetClientIndex);
 				masterListInUse = false;
+				
 				clientEndedConvo = true;
 			}
 			else{
 				BusyWaitForMasterList();
 				
 				
-				/*NEED TO PARSE USERNAME HERE AND GET MESSAGE CONTENT*/
-				//strcpy(masterList.allClients[targetClientIndex].UserName, userName);
-				messageStatus = parseMessage(buffer, &masterList, clientInfo.IPAddress, clientMessage);
+				strcpy(masterList.allClients[targetClientIndex].UserName, userName);
 				
-				/*ADD PARSED CLIENT MESSAGE TO THE LINKED LIST*/
 				MESSAGELIST* current = masterList.msgListHead;
 				if(current == NULL){
 					current = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
-					strcpy(current->Message, clientMessage);
+					strcpy(current->Message, outgoingMessage);
+					strcpy(current->SenderIP, senderIP);
+					current->arrowIndex = arrowIndex;
 					masterList.msgListHead = current;
 					current->next = NULL;
 				}
@@ -172,7 +181,9 @@ void* DealWithClient(void* clientInfoPtr){
 						if(current->next == NULL){
 							current->next = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
 							current = current->next;
-							strcpy(current->Message, clientMessage);
+							strcpy(current->Message, outgoingMessage);
+							strcpy(current->SenderIP, senderIP);
+							current->arrowIndex = arrowIndex;
 							current->next = NULL;
 							break;
 						}
@@ -189,7 +200,6 @@ void* DealWithClient(void* clientInfoPtr){
 	}
 	
 	pthread_exit((void*)1);
-	
 	return (void*)1;
 }
 
@@ -209,20 +219,24 @@ void* BroadCast(void* data){
 	
 	while(stopBroadcasting == false){
 		if(masterList.numClients <= 0){
-			printf("203\n");
 			stopBroadcasting = true;
 		}
 		
 		if(stopBroadcasting == false){
+			
 			currentMsg = masterList.msgListHead;
 			do{
 				if(currentMsg != NULL){
 					for(i=0;i<MAXCLIENTS;i++){
 						if(masterList.allClients[i].isActive == true){
+							if(strcmp(masterList.allClients[i].IPAddress, currentMsg->SenderIP) == 0){
+								currentMsg->Message[currentMsg->arrowIndex] = '>';
+								currentMsg->Message[currentMsg->arrowIndex+1] = '>';
+							}
 							write(masterList.allClients[i].clientSocket, currentMsg->Message, strlen(currentMsg->Message));
 						}
 					}
-					printf("SENT: %s\n", currentMsg->Message);
+					//printf("SENT: %s\n", currentMsg->Message);
 					currentMsg = currentMsg->next;
 				}
 				else{
@@ -254,7 +268,6 @@ void* BroadCast(void* data){
 	}
 	
 	pthread_exit((void*)1);
-	
 	return (void*)1;
 }
 
@@ -263,7 +276,7 @@ int main(void)
 	
 	//char tmpMessage[MAXMESSAGEBUFFER] = {};
 	
-	//sprintf(tmpMessage,"%d|172.168.20.22|[mikee]|>>|AAAAAAA|AA|K+DS", 15);
+	//sprintf(tmpMessage,"%d|172.168.20.22|[mikee]|AAAAAAA|AA|K+DS", 15);
 	//printf("%s\n", tmpMessage);
 	//parseMessage(tmpMessage);
 	
@@ -334,9 +347,8 @@ int main(void)
 		i++;
 		
 		connectingClient.clientSocket = clientSocket;
-		connectingClient.clientID = masterList.highestClientID + 1;
 		strcpy(connectingClient.IPAddress, inet_ntoa(clientAddress.sin_addr));
-		strcpy(connectingClient.UserName, "null");
+		strcpy(connectingClient.UserName, "");
 		connectingClient.isActive = true;
 
 		

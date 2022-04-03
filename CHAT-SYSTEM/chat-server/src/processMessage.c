@@ -7,110 +7,103 @@
 
 #include "../inc/processMessage.h"
 
-
-int parseMessage(char* message, MASTERLIST* ml, char* IncomingIp, char* outgoingMessage)
+int parseMessage(char* buffer, char* senderIP, char* outgoingMessage, char* userName)
 {
 
 	// Create some variables that are used to create constants for delimeter
 	// aswell variables to store the user credentials in tempVariables.
 	const char s[DELiMETERSIZE] = "|";
-	char* token;
-	
-	char msgLength[MAXBYTESRECORDED] = {};
-	char userIp[IPLENGTH] = {};
-	char directionOfMessage[MESSAGEDIRECTIONBUFFER] = {};
+
+	char processedMessage[MAXMESSAGESIZE] = {}; //FULL MSG
 	char msg[MESSAGESIZEPERPACKET] = {};
-	char user[MAXUSERLENGTH] = {};
-	char processedMessage[MAXMESSAGESIZE] = {};
-	int messageRead = 0;
 	int splitCounter = 0;
-	
-	int mlStatus = 0;
-	getUserMessage(message, msg);
-	strcpy(userIp,IncomingIp);
-	mlStatus = checkExistingClients(userIp, ml);
-	
-	token = strtok(message, s);
-	strcpy(msgLength, token);	
+
+
+	getUserMessage(buffer, msg);
+	if (strcmp(msg, "bye") == 0) {
+		return CLIENTSAID_ADIOS;
+	}
+
+	//15|172.168.20.22|[mikee]|AAAAAAA|AA|K+DS
+	char* token = strtok(buffer, s); // GETS MSG LEN
 	splitCounter++;
-	
-	printf("%s %d\n", token, splitCounter);
-	while(token != NULL)
+
+	while (token != NULL)
 	{
- 		splitCounter++;	
-		token = strtok(NULL, s);	
+		splitCounter++;
+		token = strtok(NULL, s);
 
-		switch(splitCounter)
+		switch (splitCounter)
 		{
-			
-			case 2:
-				strcpy(user, token);
-				printf("%s %d\n", token, splitCounter);
-				// DO some stuff
-				break;
-			case 3:
-				strcpy(directionOfMessage, token);
-				printf("%s %d\n", token, splitCounter);
-				// DO some stuff
-				break;
-			default:
-				break;
-			 // DO SOME STUFF
-
+		case 3:
+			strcpy(userName, token);
+			break;
+		case 2:
+			strcpy(senderIP, token);
+			break;
+		default:
+			break;
 		}
 	}
-	printf("the message is %s", msg);
-	sprintf(outgoingMessage,"%s %s << %s (04:19:59)", IncomingIp, user, msg); 		
-	splitCounter = 0;
-	
-	return 0;
+	sprintf(outgoingMessage, "%s %s << %s (04:19:59)", senderIP, userName, msg);
+	printf("%s\n", outgoingMessage);
+	return strlen(senderIP) + strlen(userName) + 2;
 }
 
-void getUserMessage(char* message, char* msg)
+void getUserMessage(char* unParsedMessage, char* parsedMsg)
 {
 	int messageLength = 0;
 	int messageDelimCounter = 0;
 	
-	messageLength = strlen(message);
+	messageLength = strlen(unParsedMessage);
 	
 	for(int i = 0; i < messageLength; i++)
 	{	
-		if(message[i] == '|' && messageDelimCounter != MAXDELIMSPERMESSAGE)
+		if(unParsedMessage[i] == '|' && messageDelimCounter != MAXDELIMSPERMESSAGE)
 		{
 			messageDelimCounter++;
 		}
 		if(messageDelimCounter == MAXDELIMSPERMESSAGE)
 		{
-			strncpy(msg, message + i + 1, messageLength - i);
+			strncpy(parsedMsg, unParsedMessage + i + 1, messageLength - i);
 			break;
 		}
 	}
-	printf("%s\n", msg);
 }
 
-int checkExistingClients(char* incomingIP, MASTERLIST* ml)
+int checkExistingClients(MASTERLIST* ml)
 {
-	for(int i = 0; i < MAXCLIENTS; i++)
+	int i = 0;
+	/*
+	for(i = 0; i < MAXCLIENTS; i++)
 	{
-		if(ml->allClients[i].isActive == true)
-		{
-			printf("NAH FOO \n");
-			printf("wuzz good %s\n", ml->allClients[i].IPAddress);
+		if(strcmp(ml->allClients[i].IPAddress, incomingIP) == 0){
+			return i;
 		}
-		if(strcmp(ml->allClients[i].IPAddress, incomingIP) != 0 && ml->allClients[i].isActive == false)
-		{
-			strcpy(ml->allClients[i].IPAddress, incomingIP);
-			break;
-			printf("HI\n");
-			printf("%s\n", ml->allClients[i].IPAddress);
-			
-			//CHECK IF THERE IS SPACE ADD IT TO THE SERVER
-			// THIS IS CLIENT DOES NOT EXIST SO ADD IT TO THE MASTERLIST
-		}		
+	}
+	*/
+	
+	for(i = 0; i < MAXCLIENTS; i++)
+	{
+		if(ml->allClients[i].isActive == false){
+			return i;
+		}
 	}
 	
+	return NOMORESPACE;
 }
 
+/*
+int FindArrow(char* msg){
+	int i = 0;
+	for(i=0;i<strlen(msg), i++){
+		if(msg[i] == '<'){
+			return i;
+		}
+	}
+	return -1;
+}
+*/
 
 
 
