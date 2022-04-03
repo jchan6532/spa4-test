@@ -1,3 +1,8 @@
+#ifndef MASTERLIST_H_
+#define MASTERLIST_H_
+
+
+
 #include "MessageList.h"
 #include "ClientInfo.h"
 
@@ -9,5 +14,8 @@ typedef struct MasterListStruct{
     
     int numMsgInList;
     int numClients;
-    int highestClientID;
 } MASTERLIST;
+
+
+
+#endif

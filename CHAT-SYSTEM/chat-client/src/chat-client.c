@@ -134,8 +134,6 @@ int main(int argc, char* argv[])
     }
 
 
-    parseArguments(argc, &argv[1], &argv[2], &server_address, &host, userID, serverName);
-
 
     int chat_startx, chat_starty, chat_width, chat_height;
     int msg_startx, msg_starty, msg_width, msg_height, i;
@@ -520,9 +518,11 @@ char* composeMessage(char* buffer, int messageLength, char* userID)
 
 
   strcpy(messageToServer, messageLenStr);
+  strcat(messageToServer, "|");
+  strcat(messageToServer, "127.0.0.1");
   strcat(messageToServer, "|[");
   strcat(messageToServer, userID);
-  strcat(messageToServer, "]|>>|");
+  strcat(messageToServer, "]|");
   strcat(messageToServer, buffer);
 
 
