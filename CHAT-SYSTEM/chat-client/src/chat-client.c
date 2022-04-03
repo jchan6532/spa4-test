@@ -81,7 +81,7 @@ void* acceptServerMsgs(void* data){
 
         len = 0;
         
-        usleep(1);
+        sleep(1);
         
         if(end == true){
             break;
