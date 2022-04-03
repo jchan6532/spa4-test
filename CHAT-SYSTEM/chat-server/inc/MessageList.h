@@ -1,5 +1,6 @@
 typedef struct MessageListStruct{
 	char Message[81];
-	int ClientIDMsgBelongsTo;
+	char SenderIP[16];
+	int arrowIndex;
 	struct MessageListStruct* next;
 } MESSAGELIST;

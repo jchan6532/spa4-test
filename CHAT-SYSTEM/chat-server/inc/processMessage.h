@@ -4,6 +4,12 @@
  * FIRST VERSION :  2022-03-18
  * DESCRIPTION :    Temp description
 */
+#ifndef PROCESSMESSAGE_H_
+#define PROCESSMESSAGE_H_
+
+
+
+
 
 #include <stdio.h>
 #include <string.h>
@@ -23,13 +29,21 @@
 #define MESSAGESIZEPERPACKET 41
 #define IPLENGTH 16
 #define MAXBYTESRECORDED 3
-#define DELiMETERSIZE 3
+#define DELiMETERSIZE 2
 #define MESSAGEDIRECTIONBUFFER 4
-#define MAXUSERLENGTH 8
+#define MAXUSERLENGTH 6
+
+#define SUCCESS 1
+#define CLIENTSAID_ADIOS -1
+#define NOMORESPACE -2
 
 
-int parseMessage(char* message, MASTERLIST* ml, char* IncomingIp, char* outgoingMessage);
-void getUserMessage(char* message, char* msg);
-int checkExistingClients(char* incomingIp, MASTERLIST* ml);
+int parseMessage(char* buffer, char* senderIP, char* outgoingMessage, char* userName);
+void getUserMessage(char* unParsedMessage, char* parsedMsg);
+int checkExistingClients(MASTERLIST* ml);
 
 
+
+
+
+#endif
