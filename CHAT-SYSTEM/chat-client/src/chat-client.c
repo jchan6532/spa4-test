@@ -41,7 +41,7 @@ bool end;
 
 // handling message window view
 // moved these to global variables to make sure signal handler could close them if needed
-WINDOW *chat_win, *msg_win;
+WINDOW *chat_win, *msg_win, *chat_win_header;
 
 int rowCount = 0;
 
@@ -99,7 +99,10 @@ void clientExitSignalHandler(int signal_number)
     //displayWindow(msg_win, "Exiting client...", 4, 0);
     sleep(2);
     delwin(chat_win);
+    delwin(chat_win_header);
     delwin(msg_win);
+
+    // send a message to server indicating bye
     endwin();
     if (errno != 0)
     {
@@ -162,13 +165,24 @@ int main(int argc, char* argv[])
     chat_height = 5;
     chat_width  = COLS - 2;
     chat_startx = 1;        
-    chat_starty = MAX_MSG_WIN_ROWS + 2;        
+    chat_starty = MAX_MSG_WIN_ROWS + 3; 
+
+    
+    char chatWinHeaderText[] = "Input message below..";
+    int chatHeaderHeight = 2;
+    chat_win_header = newwin(chatHeaderHeight, chat_width, MAX_MSG_WIN_ROWS + 2, chat_startx);
+    wmove(chat_win_header, chat_startx, MAX_MSG_WIN_ROWS + 3);
+    wprintw(chat_win_header, chatWinHeaderText);
+    wrefresh(chat_win_header);
+           
     
     // establishes the dimensions for the msg window (chat history window)
     msg_height = MAX_MSG_WIN_ROWS + 2;
     msg_width  = COLS;
     msg_startx = 0;        
     msg_starty = 0;
+
+
 
     // create message input window
     msg_win = createNewWindow(msg_height, msg_width, msg_starty, msg_startx);
