@@ -52,6 +52,7 @@ void* acceptServerMsgs(void* data){
     timeout.tv_usec = 0; // ms
     
     char buffer[MSG_TO_SERVER_SIZE + NULL_TERMINATION];
+
     int len;
 
     // const int chat_window_startx = 1;
@@ -61,8 +62,11 @@ void* acceptServerMsgs(void* data){
     while(1){
         setsockopt (threadData.socketNumber, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
         
-        memset(buffer, 0, MSG_TO_SERVER_SIZE);
+        memset(buffer, 0, MSG_TO_SERVER_SIZE + NULL_TERMINATION);
+
+
         len = read (threadData.socketNumber, buffer, MSG_TO_SERVER_SIZE);
+        // 1 message received
         if(len > 0){
             
             
@@ -74,6 +78,7 @@ void* acceptServerMsgs(void* data){
             }
 
         }
+
         len = 0;
         
         usleep(1);
@@ -97,7 +102,7 @@ void* acceptServerMsgs(void* data){
 void clientExitSignalHandler(int signal_number)
 {
     //displayWindow(msg_win, "Exiting client...", 4, 0);
-    sleep(2);
+    sleep(1);
     delwin(chat_win);
     delwin(chat_win_header);
     delwin(msg_win);
@@ -253,6 +258,10 @@ int main(int argc, char* argv[])
     while(done)
     {
         inputMessage(chat_win, buffer);
+        if (strlen(buffer) == 0)
+        {
+            continue;
+        }
         //displayWindow(msg_win, buffer, rowCount, 0);
         fflush(stdout);
 
@@ -275,6 +284,7 @@ int main(int argc, char* argv[])
 
             char* firstPacketMessageToServer = composeMessage(firstPacket, MAX_MSG_PACKET_LENGTH, userID);
             write(myserversocket, firstPacketMessageToServer, strlen(firstPacketMessageToServer));
+            sleep(1);
             
             char* secondPacketMessageToServer = composeMessage(secondPacket, strlen(secondPacket), userID);
             write(myserversocket, secondPacketMessageToServer, strlen(secondPacketMessageToServer));
