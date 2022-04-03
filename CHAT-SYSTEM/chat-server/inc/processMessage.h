@@ -38,7 +38,7 @@
 #define NOMORESPACE -2
 
 
-int parseMessage(char* buffer, char* senderIP, char* outgoingMessage, char* userName);
+int parseMessage(char* buffer, char* outgoingMessage, char* userName, char* clientIP);
 void getUserMessage(char* unParsedMessage, char* parsedMsg);
 int checkExistingClients(MASTERLIST* ml);
 

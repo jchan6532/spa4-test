@@ -228,6 +228,9 @@ int main(int argc, char* argv[])
     while(done)
     {
         inputMessage(chat_win, buffer);
+        if(strlen(buffer) == 0){
+            continue;
+        }
         //displayWindow(msg_win, buffer, rowCount, 0);
         fflush(stdout);
 

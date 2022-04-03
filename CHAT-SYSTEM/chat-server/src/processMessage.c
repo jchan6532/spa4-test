@@ -7,7 +7,7 @@
 
 #include "../inc/processMessage.h"
 
-int parseMessage(char* buffer, char* senderIP, char* outgoingMessage, char* userName)
+int parseMessage(char* buffer, char* outgoingMessage, char* userName, char* clientIP)
 {
 
 	// Create some variables that are used to create constants for delimeter
@@ -39,15 +39,19 @@ int parseMessage(char* buffer, char* senderIP, char* outgoingMessage, char* user
 			strcpy(userName, token);
 			break;
 		case 2:
-			strcpy(senderIP, token);
 			break;
 		default:
 			break;
 		}
 	}
-	sprintf(outgoingMessage, "%s %s << %s (04:19:59)", senderIP, userName, msg);
-	printf("%s\n", outgoingMessage);
-	return strlen(senderIP) + strlen(userName) + 2;
+	
+	time_t t;
+    struct tm* ttm;
+    t = time(&t);
+    
+    ttm = localtime(&t);
+    sprintf(outgoingMessage,"%-15s %-5s << %-40s (%02d:%02d:%02d)", clientIP, userName, msg, ttm->tm_hour, ttm->tm_min, ttm->tm_sec);
+	return 15 + 5 + 2;
 }
 
 void getUserMessage(char* unParsedMessage, char* parsedMsg)
