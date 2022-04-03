@@ -18,12 +18,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <ncurses.h>
-#include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -106,28 +104,40 @@ void clientExitSignalHandler(int signal_number)
 
 // function for outgoing messages
 
-int main(int argc, char* argv)
+int main(int argc, char* argv[])
 {
     end = false;
     
     int myserversocket, len, done;
     int whichClient;
-    char* userID = "Erica"; // client name
-    char* serverName = "localhost"; // server name either a name or ip
+    char userID[USER_LENGTH] = ""; // client name
+    char serverName[SERVERNAME_LENGTH] = ""; // server name either a name or ip
     struct sockaddr_in server_address;
     struct hostent* host;
     char buffer[CHAT_MSG_BUFFER];
+    int status;
 
     // if an error occurs, this makes sure the window exits correctly
     signal(SIGTERM, clientExitSignalHandler);
     signal(SIGSEGV, clientExitSignalHandler);
     signal(SIGINT, clientExitSignalHandler);
-  // not enough args
-    /*if (argc != 3)
+
+    // check argcs
+    if (argc != 3)
     {
-        printf("USAGE: chat-client.c -userID -serverName\n");
+        printf("USAGE: chat-client.c -userID -serverNameOrIP\n");
         return 1;
-    }*/
+    }
+    else
+    {
+        status = parseArguments(argc, argv[1], argv[2], &server_address, &host, userID, serverName);
+        if(status == 1)
+        {
+            exit(1);
+        }
+
+        printf("Client started...\n");
+    }
 
 
     parseArguments(argc, &argv[1], &argv[2], &server_address, &host, userID, serverName);
@@ -168,6 +178,12 @@ int main(int argc, char* argv)
 
     // get host info
     host = gethostbyname(serverName);
+
+    // check null
+    if (host == NULL)
+    {
+        exit(1);
+    }
 
     // initialize struct to get a socket to host
     memset(&server_address, 0, sizeof(server_address));
@@ -311,8 +327,42 @@ int main(int argc, char* argv)
 
 
 
-int parseArguments(int argc, char* firstArg, char* secondArg, struct sockaddr_in* server_address, struct hostent** host, char* userID, char* serverName)
+// command line argument parsing
+int parseArguments(int argc, char* firstArg, char* secondArg, struct sockaddr_in* server_address_ptr, 
+                    struct hostent** host_ptr, char* userID, char*serverName)
 {
+    struct hostent *he;
+    struct in_addr **addr_list;
+    
+    char userCmd[USER_LENGTH] = "-user";
+    char serverCmd[SERVER_LENGTH] = "-server"; 
+    int user_len = strlen(userCmd);
+    int server_len = strlen(serverCmd);
+
+    // user name min len validation
+    if(strlen(firstArg) <= user_len)
+    {
+        printf("User name not provided\n"); 
+        return 1; 
+    }
+
+    // user name max len validation
+    if(strlen(firstArg) > user_len + USERNAME_LENGTH)
+    {
+        printf("User name can be up to 5 characters\n"); 
+        return 1; 
+    }
+
+    // server name or IP validation
+    if(strlen(secondArg) <= server_len)
+    {
+        printf("Server not provided\n"); 
+        return 1; 
+    }
+
+    strcpy(userID, firstArg + user_len); 
+    strcpy(serverName, secondArg + server_len);  
+
     return 0;
 }
 
