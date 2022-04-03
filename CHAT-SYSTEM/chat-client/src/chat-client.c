@@ -32,14 +32,16 @@
 
 #include "../inc/chat-client.h"
 
-typedef struct threadInfoStruct {
+typedef struct threadInfoStruct 
+{
     int socketNumber;
     WINDOW* msgWin;
 } THREADDATA;
 
 bool end;
 
-void* acceptServerMsgs(void* data){
+void* acceptServerMsgs(void* data)
+{
     THREADDATA threadData = *((THREADDATA*)data);
     struct timeval timeout;
     timeout.tv_sec = 5; // sec
@@ -49,7 +51,8 @@ void* acceptServerMsgs(void* data){
     int len;
     int rowCount = 1;
     
-    while(1){
+    while(1)
+    {
         setsockopt (threadData.socketNumber, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
         
         memset(buffer, 0, CHAT_MSG_BUFFER);
@@ -64,7 +67,8 @@ void* acceptServerMsgs(void* data){
         
         usleep(1);
         
-        if(end == true){
+        if(end == true)
+        {
             break;
         }
     }
@@ -134,9 +138,6 @@ int main(int argc, char* argv[])
     }
 
 
-    parseArguments(argc, &argv[1], &argv[2], &server_address, &host, userID, serverName);
-
-
     int chat_startx, chat_starty, chat_width, chat_height;
     int msg_startx, msg_starty, msg_width, msg_height, i;
     int shouldBlank;
@@ -178,6 +179,7 @@ int main(int argc, char* argv[])
     {
         exit(1);
     }
+
 
     // initialize struct to get a socket to host
     memset(&server_address, 0, sizeof(server_address));
