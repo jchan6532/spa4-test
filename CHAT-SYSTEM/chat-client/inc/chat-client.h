@@ -22,9 +22,13 @@
 #define DEL_CHAR_ASCII 127
 #define BACK_SPACE_ASCII 8
 #define ZERO_INDEX_ADJUSTMENT 1
+#define USERNAME_LENGTH 5 
+#define USER_LENGTH 6
+#define SERVER_LENGTH 8
+#define SERVERNAME_LENGTH 16
 
 
-int parseArguments(int, char*, char*, struct sockaddr_in*, struct hostent**, char*, char*);
+int parseArguments(int argc, char* firstArg, char* secondArg, struct sockaddr_in* server_address_ptr, struct hostent** host_ptr, char* userID, char*serverName);
 WINDOW* createNewWindow(int height, int width, int starty, int startx);
 void inputMessage(WINDOW *win, char *word);
 void blankWindow(WINDOW *win);
