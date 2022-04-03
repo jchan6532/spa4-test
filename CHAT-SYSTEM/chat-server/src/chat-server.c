@@ -215,7 +215,7 @@ void* BroadCast(void* data){
 	int i = 0;
 	MESSAGELIST* currentMsg = NULL;
 	MESSAGELIST* next = NULL;
-	usleep(1000);
+	usleep(2000);
 	
 	while(stopBroadcasting == false){
 		if(masterList.numClients <= 0){

@@ -44,6 +44,7 @@ bool end;
 WINDOW *chat_win, *msg_win, *chat_win_header;
 
 int rowCount = 0;
+int globalserversocket = 0;
 
 void* acceptServerMsgs(void* data){
     THREADDATA threadData = *((THREADDATA*)data);
@@ -51,7 +52,7 @@ void* acceptServerMsgs(void* data){
     timeout.tv_sec = 5; // sec
     timeout.tv_usec = 0; // ms
     
-    char buffer[MSG_TO_SERVER_SIZE + NULL_TERMINATION];
+    char buffer[80+ NULL_TERMINATION];
 
     int len;
 
@@ -62,10 +63,10 @@ void* acceptServerMsgs(void* data){
     while(1){
         setsockopt (threadData.socketNumber, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
         
-        memset(buffer, 0, MSG_TO_SERVER_SIZE + NULL_TERMINATION);
+        memset(buffer, 0, 80 + NULL_TERMINATION);
 
 
-        len = read (threadData.socketNumber, buffer, MSG_TO_SERVER_SIZE);
+        len = read (threadData.socketNumber, buffer, 80);
         // 1 message received
         if(len > 0){
             
@@ -107,6 +108,9 @@ void clientExitSignalHandler(int signal_number)
     delwin(chat_win_header);
     delwin(msg_win);
 
+
+    write(globalserversocket, ">>bye<<", strlen(">>bye<<"));
+
     // send a message to server indicating bye
     endwin();
     if (errno != 0)
@@ -128,13 +132,14 @@ int main(int argc, char* argv[])
     char serverName[SERVERNAME_LENGTH] = ""; // server name either a name or ip
     struct sockaddr_in server_address;
     struct hostent* host;
-    char buffer[CHAT_MSG_BUFFER];
+    char buffer[CHAT_MSG_BUFFER + NULL_TERMINATION];
     int status;
 
     // if an error occurs, this makes sure the window exits correctly
     signal(SIGTERM, clientExitSignalHandler);
     signal(SIGSEGV, clientExitSignalHandler);
     signal(SIGINT, clientExitSignalHandler);
+    signal(SIGABRT, clientExitSignalHandler);
 
     // check argcs
     if (argc != 3)
@@ -225,7 +230,7 @@ int main(int argc, char* argv[])
         return 3;
     }
 
-
+    globalserversocket = myserversocket;
 
     // attempt socket connection
     //displayWindow(msg_win, "[CLIENT] : Connecting to server", 0, 1);
@@ -250,7 +255,7 @@ int main(int argc, char* argv[])
     usleep(10); 
 
     done =1;
-    memset(buffer, 0, CHAT_MSG_BUFFER);
+    memset(buffer, 0, CHAT_MSG_BUFFER + NULL_TERMINATION);
     //if (done == 1) displayWindow(chat_win, "Enter your [chat text]", 0, 0);
 
     //int rowCount = 1;
@@ -258,6 +263,7 @@ int main(int argc, char* argv[])
     while(done)
     {
         inputMessage(chat_win, buffer);
+        
         if (strlen(buffer) == 0)
         {
             continue;
@@ -277,23 +283,39 @@ int main(int argc, char* argv[])
         // check if message length is greater than 40
         if (messageLength > MAX_MSG_PACKET_LENGTH)
         {
-            char* firstPacket = (char*)malloc(MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
-            char* secondPacket = (char*)malloc(messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+            // char* firstPacket = (char*)malloc(MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+            // char* secondPacket = (char*)malloc(messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+
+            char firstPacket[MAX_MSG_PACKET_LENGTH + NULL_TERMINATION] = {};
+            char secondPacket[messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION];
+            
+            // memset(firstPacket, 0, MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+            // memset(secondPacket, 0, messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+            
             makeMessagePackets(buffer, messageLength, firstPacket, secondPacket);
 
 
             char* firstPacketMessageToServer = composeMessage(firstPacket, MAX_MSG_PACKET_LENGTH, userID);
+            // sleep(10);
             write(myserversocket, firstPacketMessageToServer, strlen(firstPacketMessageToServer));
             sleep(1);
+
             
             char* secondPacketMessageToServer = composeMessage(secondPacket, strlen(secondPacket), userID);
             write(myserversocket, secondPacketMessageToServer, strlen(secondPacketMessageToServer));
             
+            memset(firstPacketMessageToServer, 0, MAX_MSG_PACKET_LENGTH);
+            memset(firstPacket, 0, MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
 
-            free(firstPacketMessageToServer);
-            free(firstPacket);
-            free(secondPacket);
-            free(secondPacketMessageToServer);
+            memset(secondPacket, 0, messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+            memset(secondPacketMessageToServer, 0, strlen(secondPacket));
+
+            memset(buffer, 0, CHAT_MSG_BUFFER + NULL_TERMINATION);
+            // free(firstPacket);
+            // free(firstPacketMessageToServer);
+            // free(secondPacket);
+            // free(secondPacketMessageToServer);
+
         }
         else
         {
@@ -413,7 +435,7 @@ void inputMessage(WINDOW *win, char *word)
      
   blankWindow(win);                          /* make it a clean window */
   getmaxyx(win, maxrow, maxcol);          /* get window size */
-  bzero(word, CHAT_MSG_BUFFER); // sets all the bytes in word to 0
+  bzero(word, CHAT_MSG_BUFFER + NULL_TERMINATION); // sets all the bytes in word to 0
   wmove(win, 1, 1);                       /* position cursor at top */
   keypad(win, TRUE);
 
@@ -586,7 +608,7 @@ void shiftLinesUp(WINDOW *win)
 // messagelength|[username]|>>|message
 char* composeMessage(char* buffer, int messageLength, char* userID)
 {
-  char* messageToServer = (char*)malloc(MSG_TO_SERVER_SIZE + NULL_TERMINATION); 
+  char* messageToServer = (char*)malloc(CHAT_MSG_BUFFER + NULL_TERMINATION); 
   // 53 chars - messageLength|[user]|>>|message (max 40 chars)
 
 
