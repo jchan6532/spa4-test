@@ -41,26 +41,34 @@ typedef struct threadInfoStruct {
 
 bool end;
 
+// handling message window view
+// moved these to global variables to make sure signal handler could close them if needed
+WINDOW *chat_win, *msg_win;
+
 void* acceptServerMsgs(void* data){
     THREADDATA threadData = *((THREADDATA*)data);
     struct timeval timeout;
     timeout.tv_sec = 5; // sec
     timeout.tv_usec = 0; // ms
     
-    char buffer[CHAT_MSG_BUFFER];
+    char buffer[MSG_TO_SERVER_SIZE + NULL_TERMINATION];
     int len;
-    int rowCount = 1;
+    int rowCount = 0;
+
+    // const int chat_window_startx = 1;
+    // const int chat_window_starty = LINES - 5;
     
+    // need to adjust to accept possibly 2 messages one by one
     while(1){
         setsockopt (threadData.socketNumber, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
         
-        memset(buffer, 0, CHAT_MSG_BUFFER);
-        len = read (threadData.socketNumber, buffer, CHAT_MSG_BUFFER);
+        memset(buffer, 0, MSG_TO_SERVER_SIZE);
+        len = read (threadData.socketNumber, buffer, MSG_TO_SERVER_SIZE);
         if(len > 0){
             rowCount++;
             displayWindow(threadData.msgWin, buffer, rowCount, 0);
             fflush(stdout);
-            rowCount++;
+            // wmove(chat_win, chat_window_startx, chat_window_starty);
         }
         len = 0;
         
@@ -79,9 +87,7 @@ void* acceptServerMsgs(void* data){
 
 
 
-// handling message window view
-// moved these to global variables to make sure signal handler could close them if needed
-WINDOW *chat_win, *msg_win;
+
 
 // needed to handle when client exits, makes sure the windows are destroyed after any seg faults etc.
 void clientExitSignalHandler(int signal_number)
@@ -207,7 +213,7 @@ int main(int argc, char* argv)
 
     done =1;
     memset(buffer, 0, CHAT_MSG_BUFFER);
-    if (done == 1) displayWindow(chat_win, "Enter your [chat text]", 0, 0);
+    //if (done == 1) displayWindow(chat_win, "Enter your [chat text]", 0, 0);
 
     int rowCount = 1;
     // client should exit when user types >> bye <<
@@ -275,6 +281,7 @@ int main(int argc, char* argv)
         //displayWindow(msg_win, buffer, rowCount, 0);
 
 
+        
         //fflush(stdout);
         //rowCount++;
     }

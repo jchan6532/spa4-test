@@ -19,7 +19,7 @@
 
 #include "../inc/MasterList.h"
 
-#define BUFFERSIZE 80
+#define BUFFERSIZE 53
 #define PORT 5000
 
 
