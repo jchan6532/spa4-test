@@ -25,7 +25,10 @@ int parseMessage(char* message, MASTERLIST* ml, char* IncomingIp, char* outgoing
 	int messageRead = 0;
 	int splitCounter = 0;
 	
+	int mlStatus = 0;
 	getUserMessage(message, msg);
+	strcpy(userIp,IncomingIp);
+	mlStatus = checkExistingClients(userIp, ml);
 	
 	token = strtok(message, s);
 	strcpy(msgLength, token);	
@@ -85,15 +88,25 @@ void getUserMessage(char* message, char* msg)
 	printf("%s\n", msg);
 }
 
-int checkExistingCLients(char* incomingIP, MASTERLIST* ml)
+int checkExistingClients(char* incomingIP, MASTERLIST* ml)
 {
 	for(int i = 0; i < MAXCLIENTS; i++)
 	{
-		 if(strcmp(ml->allClients[i].IPAddress, incomingIP) != 0 && ml->allClients[i].isActive == false)
+		if(ml->allClients[i].isActive == true)
 		{
+			printf("NAH FOO \n");
+			printf("wuzz good %s\n", ml->allClients[i].IPAddress);
+		}
+		if(strcmp(ml->allClients[i].IPAddress, incomingIP) != 0 && ml->allClients[i].isActive == false)
+		{
+			strcpy(ml->allClients[i].IPAddress, incomingIP);
+			break;
+			printf("HI\n");
+			printf("%s\n", ml->allClients[i].IPAddress);
+			
 			//CHECK IF THERE IS SPACE ADD IT TO THE SERVER
 			// THIS IS CLIENT DOES NOT EXIST SO ADD IT TO THE MASTERLIST
-		}
+		}		
 	}
 	
 }

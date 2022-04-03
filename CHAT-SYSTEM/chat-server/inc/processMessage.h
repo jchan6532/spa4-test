@@ -30,6 +30,6 @@
 
 int parseMessage(char* message, MASTERLIST* ml, char* IncomingIp, char* outgoingMessage);
 void getUserMessage(char* message, char* msg);
-int checkExistingCLients(char* incomingIp, MASTERLIST* ml);
+int checkExistingClients(char* incomingIp, MASTERLIST* ml);
 
 
