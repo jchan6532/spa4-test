@@ -220,7 +220,12 @@ int main(int argc, char* argv)
         // handle message input newline character
         // inputMessage function does not handle the return key entered
         if(buffer[strlen(buffer) - 1] == '\n') buffer[strlen(buffer) - 1] = '\0';
+        char tmpBuffer[128] = {};
         
+
+// 		  sprintf(tmpBuffer,"%d|[%s]|<<|%s",(int)strlen(buffer),userID, buffer);
+//      write(myserversocket, tmpBuffer, strlen(tmpBuffer));
+
         int messageLength = strlen(buffer);
 
         // check if message length is greater than 40
@@ -253,9 +258,6 @@ int main(int argc, char* argv)
             //displayWindow(msg_win, messageToServer, rowCount++, 0);
             free(messageToServer);
         }
-
-
-
 
         // exit loop if user enters the exit command
         if (strcmp(buffer, ">>bye<<") == 0)
@@ -451,6 +453,7 @@ void blankWindow(WINDOW *win)
   wrefresh(win);
 }  /* blankWin */
 
+
 // creates the message for the server with the delimiters
 
 // structure:
@@ -534,4 +537,3 @@ void makeMessagePackets(char* buffer, int messageLength, char* firstPacket, char
 
   }
 }
-

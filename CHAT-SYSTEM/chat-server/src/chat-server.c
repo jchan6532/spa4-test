@@ -17,7 +17,9 @@
 #include <pthread.h>
 #include <stdlib.h>
 
-#include "../inc/MasterList.h"
+
+//#include "../inc/MasterList.h"
+#include "../inc/processMessage.h"
 
 #define BUFFERSIZE 80
 #define PORT 5000
@@ -127,11 +129,14 @@ void* DealWithClient(void* clientInfoPtr){
 	bool clientEndedConvo = false;
 	char buffer[BUFFERSIZE];
 	char userName[6] = "";
+	int messageStatus = 0;
 	int bytesRead = 0;
 	char clientMessage[41];
 	
+	
 	while(clientEndedConvo == false){
 		memset(buffer, 0, BUFFERSIZE);
+		
 		//memset(clientMessage, 0, 41);
 		
 		bytesRead = read(clientSocket, buffer, BUFFERSIZE);
@@ -149,14 +154,16 @@ void* DealWithClient(void* clientInfoPtr){
 			else{
 				BusyWaitForMasterList();
 				
+				
 				/*NEED TO PARSE USERNAME HERE AND GET MESSAGE CONTENT*/
 				//strcpy(masterList.allClients[targetClientIndex].UserName, userName);
+				messageStatus = parseMessage(buffer, &masterList, clientInfo.IPAddress, clientMessage);
 				
 				/*ADD PARSED CLIENT MESSAGE TO THE LINKED LIST*/
 				MESSAGELIST* current = masterList.msgListHead;
 				if(current == NULL){
 					current = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
-					strcpy(current->Message, buffer);
+					strcpy(current->Message, clientMessage);
 					masterList.msgListHead = current;
 					current->next = NULL;
 				}
@@ -165,7 +172,7 @@ void* DealWithClient(void* clientInfoPtr){
 						if(current->next == NULL){
 							current->next = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
 							current = current->next;
-							strcpy(current->Message, buffer);
+							strcpy(current->Message, clientMessage);
 							current->next = NULL;
 							break;
 						}
@@ -251,15 +258,14 @@ void* BroadCast(void* data){
 	return (void*)1;
 }
 
-
-
-
-
-
-	
-
 int main(void)
 {
+	
+	//char tmpMessage[MAXMESSAGEBUFFER] = {};
+	
+	//sprintf(tmpMessage,"%d|172.168.20.22|[mikee]|>>|AAAAAAA|AA|K+DS", 15);
+	//printf("%s\n", tmpMessage);
+	//parseMessage(tmpMessage);
 	
 	/*
 	* SETUP THE MASTERLIST
@@ -364,6 +370,8 @@ int main(void)
 	joinStatus = pthread_join(broadcastThreadID, NULL);
 
 	close(serverSocket);
+
+
 
 	return 0;
 }
