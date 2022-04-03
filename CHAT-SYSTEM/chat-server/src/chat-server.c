@@ -118,6 +118,7 @@ void* DealWithClient(void* clientInfoPtr){
 	CLIENTINFO clientInfo = *((CLIENTINFO*)clientInfoPtr);
 	int i = 0;
 	int clientSocket = 0;
+	char clientIP[16] = "";
 	int targetClientIndex = checkExistingClients(&masterList);
 	
 	BusyWaitForMasterList();
@@ -130,6 +131,7 @@ void* DealWithClient(void* clientInfoPtr){
 		strcpy(masterList.allClients[targetClientIndex].IPAddress, clientInfo.IPAddress);
 		
 		clientSocket = masterList.allClients[targetClientIndex].clientSocket;
+		strcpy(clientIP, masterList.allClients[targetClientIndex].IPAddress);
 	}
 	
 	masterListInUse = false;
@@ -139,7 +141,6 @@ void* DealWithClient(void* clientInfoPtr){
 	bool clientEndedConvo = false;
 	char buffer[BUFFERSIZE] = "";
 	char userName[6+2] = "";
-	char senderIP[16] = "";
 	char outgoingMessage[75] = "";
 	int arrowIndex = 0;
 	int bytesRead = 0;
@@ -147,12 +148,11 @@ void* DealWithClient(void* clientInfoPtr){
 	
 	while(clientEndedConvo == false){
 		memset(buffer, 0, BUFFERSIZE);
-		
 		bytesRead = read(clientSocket, buffer, BUFFERSIZE);
 		if (bytesRead > 0) {
 			printf("SENT: %s\n", buffer);
-			arrowIndex = parseMessage(buffer, senderIP, outgoingMessage, userName);
-			printf("OUTGOINGMESSAGE: %s\n", outgoingMessage);
+			arrowIndex = parseMessage(buffer, outgoingMessage, userName, clientIP);
+			//printf("OUTGOINGMESSAGE: %s\n", outgoingMessage);
 			if(arrowIndex == CLIENTSAID_ADIOS){
 					
 				BusyWaitForMasterList();
@@ -171,7 +171,7 @@ void* DealWithClient(void* clientInfoPtr){
 				if(current == NULL){
 					current = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
 					strcpy(current->Message, outgoingMessage);
-					strcpy(current->SenderIP, senderIP);
+					strcpy(current->SenderIP, clientIP);
 					current->arrowIndex = arrowIndex;
 					masterList.msgListHead = current;
 					current->next = NULL;
@@ -182,7 +182,7 @@ void* DealWithClient(void* clientInfoPtr){
 							current->next = (MESSAGELIST*)calloc(1, sizeof(MESSAGELIST));
 							current = current->next;
 							strcpy(current->Message, outgoingMessage);
-							strcpy(current->SenderIP, senderIP);
+							strcpy(current->SenderIP, clientIP);
 							current->arrowIndex = arrowIndex;
 							current->next = NULL;
 							break;
@@ -215,15 +215,15 @@ void* BroadCast(void* data){
 	int i = 0;
 	MESSAGELIST* currentMsg = NULL;
 	MESSAGELIST* next = NULL;
-	usleep(100);
+	usleep(1000);
 	
 	while(stopBroadcasting == false){
 		if(masterList.numClients <= 0){
+			printf("line 223");
 			stopBroadcasting = true;
 		}
 		
 		if(stopBroadcasting == false){
-			
 			currentMsg = masterList.msgListHead;
 			do{
 				if(currentMsg != NULL){
@@ -232,7 +232,8 @@ void* BroadCast(void* data){
 							if(strcmp(masterList.allClients[i].IPAddress, currentMsg->SenderIP) == 0){
 								currentMsg->Message[currentMsg->arrowIndex] = '>';
 								currentMsg->Message[currentMsg->arrowIndex+1] = '>';
-							}
+								printf("SAME IP\n");
+							}	
 							write(masterList.allClients[i].clientSocket, currentMsg->Message, strlen(currentMsg->Message));
 						}
 					}
