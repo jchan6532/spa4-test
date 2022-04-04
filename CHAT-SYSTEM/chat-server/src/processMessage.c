@@ -6,6 +6,8 @@
 */
 
 #include "../inc/processMessage.h"
+#include <stdlib.h>
+#include <ctype.h>
 
 int parseMessage(char* buffer, char* outgoingMessage, char* userName, char* clientIP)
 {
@@ -24,8 +26,17 @@ int parseMessage(char* buffer, char* outgoingMessage, char* userName, char* clie
         return CLIENTSAID_ADIOS;
     }
 
+	// char bufferCopy[MESSAGESIZEPERPACKET] = {};
+	// strcpy(bufferCopy, buffer);
+
     //15|172.168.20.22|[mikee]|AAAAAAA|AA|K+DS
     char* token = strtok(buffer, s); // GETS MSG LEN
+
+	// getUserMessage(buffer, msg);
+    // if (strcmp(msg, "bye") == 0) {
+    //     return CLIENTSAID_ADIOS;
+    // }
+
     splitCounter++;
 
     while (token != NULL)
@@ -60,6 +71,8 @@ void getUserMessage(char* unParsedMessage, char* parsedMsg)
 	int messageLength = 0;
 	int messageDelimCounter = 0;
 	
+
+
 	messageLength = strlen(unParsedMessage);
 	
 	for(int i = 0; i < messageLength; i++)

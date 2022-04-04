@@ -235,6 +235,7 @@ void* BroadCast(void* data){
 								printf("SAME IP\n");
 							}	
 							write(masterList.allClients[i].clientSocket, currentMsg->Message, strlen(currentMsg->Message));
+							printf("outgoing message %s\n", currentMsg->Message);
 						}
 					}
 					//printf("SENT: %s\n", currentMsg->Message);

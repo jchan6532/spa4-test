@@ -52,7 +52,7 @@ void* acceptServerMsgs(void* data){
     timeout.tv_sec = 5; // sec
     timeout.tv_usec = 0; // ms
     
-    char buffer[80+ NULL_TERMINATION];
+    char buffer[CHAT_MSG_BUFFER + NULL_TERMINATION];
 
     int len;
 
@@ -63,10 +63,10 @@ void* acceptServerMsgs(void* data){
     while(1){
         setsockopt (threadData.socketNumber, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
         
-        memset(buffer, 0, 80 + NULL_TERMINATION);
+        memset(buffer, 0, CHAT_MSG_BUFFER + NULL_TERMINATION);
 
 
-        len = read (threadData.socketNumber, buffer, 80);
+        len = read (threadData.socketNumber, buffer, CHAT_MSG_BUFFER);
         // 1 message received
         if(len > 0){
             
@@ -79,7 +79,8 @@ void* acceptServerMsgs(void* data){
             }
 
         }
-
+        
+        // memset(buffer, 0, CHAT_MSG_BUFFER + NULL_TERMINATION);
         len = 0;
         
         sleep(1);
@@ -175,18 +176,20 @@ int main(int argc, char* argv[])
     chat_height = 5;
     chat_width  = COLS - 2;
     chat_startx = 1;        
+    //chat_starty = LINES - chat_height - 1;
     chat_starty = MAX_MSG_WIN_ROWS + 3; 
 
     
-    char chatWinHeaderText[] = "Input message below..";
-    int chatHeaderHeight = 2;
-    chat_win_header = newwin(chatHeaderHeight, chat_width, MAX_MSG_WIN_ROWS + 2, chat_startx);
-    wmove(chat_win_header, chat_startx, MAX_MSG_WIN_ROWS + 3);
-    wprintw(chat_win_header, chatWinHeaderText);
-    wrefresh(chat_win_header);
+    // char chatWinHeaderText[] = "Input message below..";
+    // int chatHeaderHeight = 2;
+    // chat_win_header = newwin(chatHeaderHeight, chat_width, MAX_MSG_WIN_ROWS + 2, chat_startx);
+    // wmove(chat_win_header, chat_startx, MAX_MSG_WIN_ROWS + 3);
+    // wprintw(chat_win_header, chatWinHeaderText);
+    // wrefresh(chat_win_header);
            
     
     // establishes the dimensions for the msg window (chat history window)
+    //msg_height = LINES - chat_height - 1;
     msg_height = MAX_MSG_WIN_ROWS + 2;
     msg_width  = COLS;
     msg_startx = 0;        
@@ -308,7 +311,7 @@ int main(int argc, char* argv[])
             memset(firstPacket, 0, MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
 
             memset(secondPacket, 0, messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
-            memset(secondPacketMessageToServer, 0, strlen(secondPacket));
+            memset(secondPacketMessageToServer, 0, strlen(secondPacket) + NULL_TERMINATION);
 
             memset(buffer, 0, CHAT_MSG_BUFFER + NULL_TERMINATION);
             // free(firstPacket);
@@ -538,13 +541,20 @@ void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank)
   wsetscrreg(win, 1, MAX_MSG_WIN_ROWS + 1);
   if(shouldBlank == 1) blankWindow(win);                /* make it a clean window */
   wmove(win, (whichRow+1), 1);                       /* position cusor at approp row */
+  
   wprintw(win, word);
   
   wprintw(win, "\n");
   wrefresh(win);
 
-  box(win, 0, 0);             /* draw the box again */
-  wrefresh(win);
+  if (whichRow >= MAX_MSG_WIN_ROWS)
+  {
+      box(win, 0, 0);
+      wrefresh(win);
+  }
+
+//   box(win, 0, 0);             /* draw the box again */
+//   wrefresh(win);
 
 } /* display_win */
 
@@ -608,7 +618,8 @@ void shiftLinesUp(WINDOW *win)
 // messagelength|[username]|>>|message
 char* composeMessage(char* buffer, int messageLength, char* userID)
 {
-  char* messageToServer = (char*)malloc(CHAT_MSG_BUFFER + NULL_TERMINATION); 
+  char* messageToServer = (char*)malloc(CHAT_MSG_BUFFER + NULL_TERMINATION);
+  //memset(messageToServer, 0, CHAT_MSG_BUFFER + NULL_TERMINATION); 
   // 53 chars - messageLength|[user]|>>|message (max 40 chars)
 
 
