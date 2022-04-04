@@ -39,30 +39,51 @@ typedef struct threadInfoStruct {
 
 bool end;
 
+// handling message window view
+// moved these to global variables to make sure signal handler could close them if needed
+WINDOW *chat_win, *msg_win, *chat_win_header;
+
+int rowCount = 0;
+int globalserversocket = 0;
+
 void* acceptServerMsgs(void* data){
     THREADDATA threadData = *((THREADDATA*)data);
     struct timeval timeout;
     timeout.tv_sec = 5; // sec
     timeout.tv_usec = 0; // ms
     
-    char buffer[CHAT_MSG_BUFFER];
+    char buffer[CHAT_MSG_BUFFER + NULL_TERMINATION];
+
     int len;
-    int rowCount = 1;
+
+    // const int chat_window_startx = 1;
+    // const int chat_window_starty = LINES - 5;
     
+    // need to adjust to accept possibly 2 messages one by one
     while(1){
         setsockopt (threadData.socketNumber, SOL_SOCKET, SO_RCVTIMEO, (const void *)&timeout, sizeof(timeout));
         
-        memset(buffer, 0, CHAT_MSG_BUFFER);
+        memset(buffer, 0, CHAT_MSG_BUFFER + NULL_TERMINATION);
+
+
         len = read (threadData.socketNumber, buffer, CHAT_MSG_BUFFER);
+        // 1 message received
         if(len > 0){
-            rowCount++;
+            
+            
             displayWindow(threadData.msgWin, buffer, rowCount, 0);
             fflush(stdout);
-            rowCount++;
+            if (rowCount < MAX_MSG_WIN_ROWS)
+            {
+                rowCount++;
+            }
+
         }
+        
+        // memset(buffer, 0, CHAT_MSG_BUFFER + NULL_TERMINATION);
         len = 0;
         
-        usleep(1);
+        sleep(1);
         
         if(end == true){
             break;
@@ -77,17 +98,21 @@ void* acceptServerMsgs(void* data){
 
 
 
-// handling message window view
-// moved these to global variables to make sure signal handler could close them if needed
-WINDOW *chat_win, *msg_win;
+
 
 // needed to handle when client exits, makes sure the windows are destroyed after any seg faults etc.
 void clientExitSignalHandler(int signal_number)
 {
-    displayWindow(msg_win, "Exiting client...", 4, 0);
-    sleep(2);
+    //displayWindow(msg_win, "Exiting client...", 4, 0);
+    sleep(1);
     delwin(chat_win);
+    delwin(chat_win_header);
     delwin(msg_win);
+
+
+    write(globalserversocket, ">>bye<<", strlen(">>bye<<"));
+
+    // send a message to server indicating bye
     endwin();
     if (errno != 0)
     {
@@ -108,13 +133,14 @@ int main(int argc, char* argv[])
     char serverName[SERVERNAME_LENGTH] = ""; // server name either a name or ip
     struct sockaddr_in server_address;
     struct hostent* host;
-    char buffer[CHAT_MSG_BUFFER];
+    char buffer[CHAT_MSG_BUFFER + NULL_TERMINATION];
     int status;
 
     // if an error occurs, this makes sure the window exits correctly
     signal(SIGTERM, clientExitSignalHandler);
     signal(SIGSEGV, clientExitSignalHandler);
     signal(SIGINT, clientExitSignalHandler);
+    signal(SIGABRT, clientExitSignalHandler);
 
     // check argcs
     if (argc != 3)
@@ -140,24 +166,36 @@ int main(int argc, char* argv[])
     int shouldBlank;
 
     // once valid arguments, attempt to connect
-
     initscr();
     cbreak();
     noecho();
     refresh();
 
-    // establishes the dimensions for the chat window
+    // establishes the dimensions for the chat window (input window)
     shouldBlank = 0;
     chat_height = 5;
     chat_width  = COLS - 2;
     chat_startx = 1;        
-    chat_starty = LINES - chat_height;        
+    //chat_starty = LINES - chat_height - 1;
+    chat_starty = MAX_MSG_WIN_ROWS + 3; 
+
     
-    // establishes the dimensions for the msg window
-    msg_height = LINES - chat_height - 1;
+    // char chatWinHeaderText[] = "Input message below..";
+    // int chatHeaderHeight = 2;
+    // chat_win_header = newwin(chatHeaderHeight, chat_width, MAX_MSG_WIN_ROWS + 2, chat_startx);
+    // wmove(chat_win_header, chat_startx, MAX_MSG_WIN_ROWS + 3);
+    // wprintw(chat_win_header, chatWinHeaderText);
+    // wrefresh(chat_win_header);
+           
+    
+    // establishes the dimensions for the msg window (chat history window)
+    //msg_height = LINES - chat_height - 1;
+    msg_height = MAX_MSG_WIN_ROWS + 2;
     msg_width  = COLS;
     msg_startx = 0;        
     msg_starty = 0;
+
+
 
     // create message input window
     msg_win = createNewWindow(msg_height, msg_width, msg_starty, msg_startx);
@@ -195,10 +233,10 @@ int main(int argc, char* argv[])
         return 3;
     }
 
-
+    globalserversocket = myserversocket;
 
     // attempt socket connection
-    displayWindow(msg_win, "[CLIENT] : Connecting to server", 0, 1);
+    //displayWindow(msg_win, "[CLIENT] : Connecting to server", 0, 1);
     //sleep(2);
     fflush(stdout);
     if (connect(myserversocket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0)
@@ -220,15 +258,17 @@ int main(int argc, char* argv[])
     usleep(10); 
 
     done =1;
-    memset(buffer, 0, CHAT_MSG_BUFFER);
-    if (done == 1) displayWindow(chat_win, "Enter your [chat text]", 0, 0);
+    memset(buffer, 0, CHAT_MSG_BUFFER + NULL_TERMINATION);
+    //if (done == 1) displayWindow(chat_win, "Enter your [chat text]", 0, 0);
 
-    int rowCount = 1;
+    //int rowCount = 1;
     // client should exit when user types >> bye <<
     while(done)
     {
         inputMessage(chat_win, buffer);
-        if(strlen(buffer) == 0){
+        
+        if (strlen(buffer) == 0)
+        {
             continue;
         }
         //displayWindow(msg_win, buffer, rowCount, 0);
@@ -240,30 +280,45 @@ int main(int argc, char* argv[])
         char tmpBuffer[128] = {};
         
 
-// 		  sprintf(tmpBuffer,"%d|[%s]|<<|%s",(int)strlen(buffer),userID, buffer);
-//      write(myserversocket, tmpBuffer, strlen(tmpBuffer));
 
         int messageLength = strlen(buffer);
 
         // check if message length is greater than 40
         if (messageLength > MAX_MSG_PACKET_LENGTH)
         {
-            char* firstPacket = (char*)malloc(MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
-            char* secondPacket = (char*)malloc(messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+            // char* firstPacket = (char*)malloc(MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+            // char* secondPacket = (char*)malloc(messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+
+            char firstPacket[MAX_MSG_PACKET_LENGTH + NULL_TERMINATION] = {};
+            char secondPacket[messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION];
+            
+            // memset(firstPacket, 0, MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+            // memset(secondPacket, 0, messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+            
             makeMessagePackets(buffer, messageLength, firstPacket, secondPacket);
 
 
             char* firstPacketMessageToServer = composeMessage(firstPacket, MAX_MSG_PACKET_LENGTH, userID);
+            // sleep(10);
             write(myserversocket, firstPacketMessageToServer, strlen(firstPacketMessageToServer));
-            //displayWindow(msg_win, firstPacketMessageToServer, rowCount++, 0);
+            sleep(1);
+
+            
             char* secondPacketMessageToServer = composeMessage(secondPacket, strlen(secondPacket), userID);
             write(myserversocket, secondPacketMessageToServer, strlen(secondPacketMessageToServer));
-            //displayWindow(msg_win, secondPacketMessageToServer, rowCount++, 0);
+            
+            memset(firstPacketMessageToServer, 0, MAX_MSG_PACKET_LENGTH);
+            memset(firstPacket, 0, MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
 
-            free(firstPacketMessageToServer);
-            free(firstPacket);
-            free(secondPacket);
-            free(secondPacketMessageToServer);
+            memset(secondPacket, 0, messageLength - (int)MAX_MSG_PACKET_LENGTH + NULL_TERMINATION);
+            memset(secondPacketMessageToServer, 0, strlen(secondPacket) + NULL_TERMINATION);
+
+            memset(buffer, 0, CHAT_MSG_BUFFER + NULL_TERMINATION);
+            // free(firstPacket);
+            // free(firstPacketMessageToServer);
+            // free(secondPacket);
+            // free(secondPacketMessageToServer);
+
         }
         else
         {
@@ -272,7 +327,7 @@ int main(int argc, char* argv[])
             char* messageToServer = composeMessage(buffer, messageLength, userID);
             // sends message to server
             write(myserversocket, messageToServer, strlen(messageToServer));
-            //displayWindow(msg_win, messageToServer, rowCount++, 0);
+            
             free(messageToServer);
         }
 
@@ -294,6 +349,7 @@ int main(int argc, char* argv[])
         //displayWindow(msg_win, buffer, rowCount, 0);
 
 
+        
         //fflush(stdout);
         //rowCount++;
     }
@@ -305,7 +361,7 @@ int main(int argc, char* argv[])
 
 
     close(myserversocket);
-    printf("[CLIENT] : Client done.\n");
+    
     fflush(stdout);
 
 
@@ -382,7 +438,7 @@ void inputMessage(WINDOW *win, char *word)
      
   blankWindow(win);                          /* make it a clean window */
   getmaxyx(win, maxrow, maxcol);          /* get window size */
-  bzero(word, CHAT_MSG_BUFFER); // sets all the bytes in word to 0
+  bzero(word, CHAT_MSG_BUFFER + NULL_TERMINATION); // sets all the bytes in word to 0
   wmove(win, 1, 1);                       /* position cursor at top */
   keypad(win, TRUE);
 
@@ -420,12 +476,15 @@ void inputMessage(WINDOW *win, char *word)
             else if (ch == KEY_BACKSPACE)
             {
 
-              wmove(win, row, col--);
-              wclrtoeol(win);
-              wrefresh(win);
-              wmove(win, row, col--);
-              wdelch(win);
-              wrefresh(win);
+                wmove(win, row, col--);
+                wclrtoeol(win);
+                wrefresh(win);
+                wmove(win, row, col--);
+                wdelch(win);
+                wrefresh(win);
+
+                box(win, 0, 0);             /* draw the box again */
+                wrefresh(win);
             }
         }
         // user has written enough characters to extend to second line of chat window
@@ -478,10 +537,25 @@ void inputMessage(WINDOW *win, char *word)
 // otherwise, updates window with new info
 void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank)
 {
+  scrollok(win, TRUE);
+  wsetscrreg(win, 1, MAX_MSG_WIN_ROWS + 1);
   if(shouldBlank == 1) blankWindow(win);                /* make it a clean window */
   wmove(win, (whichRow+1), 1);                       /* position cusor at approp row */
+  
   wprintw(win, word);
+  
+  wprintw(win, "\n");
   wrefresh(win);
+
+  if (whichRow >= MAX_MSG_WIN_ROWS)
+  {
+      box(win, 0, 0);
+      wrefresh(win);
+  }
+
+//   box(win, 0, 0);             /* draw the box again */
+//   wrefresh(win);
+
 } /* display_win */
 
 
@@ -505,13 +579,47 @@ void blankWindow(WINDOW *win)
 }  /* blankWin */
 
 
+// clears the first line of input from the message window
+void blankLine(WINDOW *win, int rowToRemove, WINDOW *chatWindow)
+{
+
+    int maxcol = getmaxx(win);
+
+    // set cursor to top row of chat window and refresh to perform the move
+    wmove(win, rowToRemove, 1);
+    refresh();
+
+    // clear the contents of that line and refresh the window
+    wclrtoeol(win);
+    wrefresh(win);
+
+    // redraw the box
+    box(win, 0, 0);
+    wrefresh(win);
+
+
+}
+
+// shifts the chat history up one line
+void shiftLinesUp(WINDOW *win)
+{
+    // int startRow = 1;
+    // for (int i=0; i < MAX_MSG_WIN_ROWS; i++)
+    // {
+    //     wmove(win, startRow, 1);
+
+    // }
+}
+
+
 // creates the message for the server with the delimiters
 
 // structure:
 // messagelength|[username]|>>|message
 char* composeMessage(char* buffer, int messageLength, char* userID)
 {
-  char* messageToServer = (char*)malloc(MSG_TO_SERVER_SIZE + NULL_TERMINATION); 
+  char* messageToServer = (char*)malloc(CHAT_MSG_BUFFER + NULL_TERMINATION);
+  //memset(messageToServer, 0, CHAT_MSG_BUFFER + NULL_TERMINATION); 
   // 53 chars - messageLength|[user]|>>|message (max 40 chars)
 
 

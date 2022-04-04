@@ -6,52 +6,64 @@
 */
 
 #include "../inc/processMessage.h"
+#include <stdlib.h>
+#include <ctype.h>
 
 int parseMessage(char* buffer, char* outgoingMessage, char* userName, char* clientIP)
 {
 
-	// Create some variables that are used to create constants for delimeter
-	// aswell variables to store the user credentials in tempVariables.
-	const char s[DELiMETERSIZE] = "|";
+    // Create some variables that are used to create constants for delimeter
+    // aswell variables to store the user credentials in tempVariables.
+    const char s[DELiMETERSIZE] = "|";
 
-	char processedMessage[MAXMESSAGESIZE] = {}; //FULL MSG
-	char msg[MESSAGESIZEPERPACKET] = {};
-	int splitCounter = 0;
+    char processedMessage[MAXMESSAGESIZE] = {}; //FULL MSG
+    char msg[MESSAGESIZEPERPACKET] = {};
+    int splitCounter = 0;
 
 
-	getUserMessage(buffer, msg);
-	if (strcmp(msg, "bye") == 0) {
-		return CLIENTSAID_ADIOS;
-	}
+    getUserMessage(buffer, msg);
+    if (strcmp(msg, "bye") == 0) {
+        return CLIENTSAID_ADIOS;
+    }
 
-	//15|172.168.20.22|[mikee]|AAAAAAA|AA|K+DS
-	char* token = strtok(buffer, s); // GETS MSG LEN
-	splitCounter++;
+	// char bufferCopy[MESSAGESIZEPERPACKET] = {};
+	// strcpy(bufferCopy, buffer);
 
-	while (token != NULL)
-	{
-		splitCounter++;
-		token = strtok(NULL, s);
+    //15|172.168.20.22|[mikee]|AAAAAAA|AA|K+DS
+    char* token = strtok(buffer, s); // GETS MSG LEN
 
-		switch (splitCounter)
-		{
-		case 3:
-			strcpy(userName, token);
-			break;
-		case 2:
-			break;
-		default:
-			break;
-		}
-	}
-	
-	time_t t;
+	// getUserMessage(buffer, msg);
+    // if (strcmp(msg, "bye") == 0) {
+    //     return CLIENTSAID_ADIOS;
+    // }
+
+    splitCounter++;
+
+    while (token != NULL)
+    {
+        splitCounter++;
+        token = strtok(NULL, s);
+
+        switch (splitCounter)
+        {
+        case 3:
+            strcpy(userName, token+1);
+            userName[strlen(token)-2] = 0;
+            break;
+        case 2:
+            break;
+        default:
+            break;
+        }
+    }
+
+    time_t t;
     struct tm* ttm;
     t = time(&t);
     
     ttm = localtime(&t);
-    sprintf(outgoingMessage,"%-15s %-5s << %-40s (%02d:%02d:%02d)", clientIP, userName, msg, ttm->tm_hour, ttm->tm_min, ttm->tm_sec);
-	return 15 + 5 + 2;
+    sprintf(outgoingMessage,"%-15s [%-5s] << %-40s (%02d:%02d:%02d)", clientIP, userName, msg, ttm->tm_hour, ttm->tm_min, ttm->tm_sec);
+    return 15 + 5 + 2 + 2;
 }
 
 void getUserMessage(char* unParsedMessage, char* parsedMsg)
@@ -59,6 +71,8 @@ void getUserMessage(char* unParsedMessage, char* parsedMsg)
 	int messageLength = 0;
 	int messageDelimCounter = 0;
 	
+
+
 	messageLength = strlen(unParsedMessage);
 	
 	for(int i = 0; i < messageLength; i++)

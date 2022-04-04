@@ -215,7 +215,7 @@ void* BroadCast(void* data){
 	int i = 0;
 	MESSAGELIST* currentMsg = NULL;
 	MESSAGELIST* next = NULL;
-	usleep(1000);
+	usleep(2000);
 	
 	while(stopBroadcasting == false){
 		if(masterList.numClients <= 0){
@@ -235,6 +235,7 @@ void* BroadCast(void* data){
 								printf("SAME IP\n");
 							}	
 							write(masterList.allClients[i].clientSocket, currentMsg->Message, strlen(currentMsg->Message));
+							printf("outgoing message %s\n", currentMsg->Message);
 						}
 					}
 					//printf("SENT: %s\n", currentMsg->Message);
