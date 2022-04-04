@@ -116,7 +116,7 @@ void clientExitSignalHandler(int signal_number)
     endwin();
     if (errno != 0)
     {
-        printf("Error: %s\n", strerror(errno));
+        //printf("Error: %s\n", strerror(errno));
     }
     exit(1);
 }
@@ -156,7 +156,7 @@ int main(int argc, char* argv[])
             exit(1);
         }
 
-        printf("Client started...\n");
+        //printf("Client started...\n");
     }
 
 
@@ -241,7 +241,7 @@ int main(int argc, char* argv[])
     fflush(stdout);
     if (connect(myserversocket, (struct sockaddr*)&server_address, sizeof(server_address)) < 0)
     {
-        displayWindow(msg_win, "[CLIENT] : Connect to server - FAILED", 1, 0);
+        displayWindow(msg_win, "[CLIENT] : Connect to server - FAILED", 0, 1);
         sleep(5);
         delwin(chat_win);
         delwin(msg_win);
