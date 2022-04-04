@@ -133,6 +133,11 @@ void* DealWithClient(void* clientInfoPtr){
 		clientSocket = masterList.allClients[targetClientIndex].clientSocket;
 		strcpy(clientIP, masterList.allClients[targetClientIndex].IPAddress);
 	}
+	else{
+		masterListInUse = false;
+		pthread_exit((void*)1);
+		return (void*)1;
+	}
 	
 	masterListInUse = false;
 	
@@ -160,6 +165,7 @@ void* DealWithClient(void* clientInfoPtr){
 				masterListInUse = false;
 				
 				clientEndedConvo = true;
+				break;
 			}
 			else{
 				BusyWaitForMasterList();
