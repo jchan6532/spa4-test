@@ -22,7 +22,7 @@ int parseMessage(char* buffer, char* outgoingMessage, char* userName, char* clie
 
 
     getUserMessage(buffer, msg);
-    if (strcmp(msg, "bye") == 0) {
+    if (strcmp(msg, ">>bye<<") == 0) {
         return CLIENTSAID_ADIOS;
     }
 
