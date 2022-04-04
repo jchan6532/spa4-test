@@ -239,7 +239,12 @@ void* BroadCast(void* data){
 							if(strcmp(masterList.allClients[i].IPAddress, currentMsg->SenderIP) == 0){
 								currentMsg->Message[currentMsg->arrowIndex] = '>';
 								currentMsg->Message[currentMsg->arrowIndex+1] = '>';
-								//printf("SAME IP\n");
+								printf("SAME IP >>\n");
+							}
+							else{
+								currentMsg->Message[currentMsg->arrowIndex] = '<';
+								currentMsg->Message[currentMsg->arrowIndex+1] = '<';
+								printf("DIFFERENT IP <<\n");
 							}	
 							write(masterList.allClients[i].clientSocket, currentMsg->Message, strlen(currentMsg->Message));
 							//printf("outgoing message %s\n", currentMsg->Message);
