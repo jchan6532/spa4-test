@@ -235,16 +235,16 @@ void* BroadCast(void* data){
 				if(currentMsg != NULL){
 					for(i=0;i<MAXCLIENTS;i++){
 						if(masterList.allClients[i].isActive == true){
-							printf("MSG SENDER: %s \t CURRENT CLIENT: %s\n", currentMsg->SenderIP, masterList.allClients[i].IPAddress);
+							//printf("MSG SENDER: %s \t CURRENT CLIENT: %s\n", currentMsg->SenderIP, masterList.allClients[i].IPAddress);
 							if(strcmp(masterList.allClients[i].IPAddress, currentMsg->SenderIP) == 0){
 								currentMsg->Message[currentMsg->arrowIndex] = '>';
 								currentMsg->Message[currentMsg->arrowIndex+1] = '>';
-								printf("SAME IP >>\n");
+								//printf("SAME IP >>\n");
 							}
 							else{
 								currentMsg->Message[currentMsg->arrowIndex] = '<';
 								currentMsg->Message[currentMsg->arrowIndex+1] = '<';
-								printf("DIFFERENT IP <<\n");
+								//printf("DIFFERENT IP <<\n");
 							}	
 							write(masterList.allClients[i].clientSocket, currentMsg->Message, strlen(currentMsg->Message));
 							//printf("outgoing message %s\n", currentMsg->Message);
