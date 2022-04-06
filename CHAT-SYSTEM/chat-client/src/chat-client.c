@@ -1,9 +1,8 @@
 /* FILE :           chat-client.c
  * PROJECT :        SENG2030 - Assignment #4
- * PROGRAMMER :    	Justin Chan, Michael Dremo, Paige Lam & Erica Luksts
+ * PROGRAMMER :        Justin Chan, Michael Dremo, Paige Lam & Erica Luksts
  * FIRST VERSION :  2022-03-18
- * DESCRIPTION :    This file includes all the functions for command line parsing, ....
- *                  for the chat client portion of the chat system.
+ * DESCRIPTION :    This file includes all the functions for the chat client portion of the chat system.
 */
 
 
@@ -46,6 +45,16 @@ WINDOW *chat_win, *msg_win, *chat_win_header;
 int rowCount = 0;
 int globalserversocket = 0;
 
+/*
+* Function        : acceptServerMsgs()
+* Description    : it listens on server and process the incoming messages from the server
+* Parameters    : void* data                : a pointer to data 
+*                 struct timeval            : timeval in a struct 
+*                 struct timeout            : timeout in a struct 
+*                 char buffer[]             : buffer as char array
+*                 int len                   : len as int data type 
+* Returns        : (void*)1 - success 
+*/
 void* acceptServerMsgs(void* data){
     THREADDATA threadData = *((THREADDATA*)data);
     struct timeval timeout;
@@ -101,6 +110,12 @@ void* acceptServerMsgs(void* data){
 
 
 // needed to handle when client exits, makes sure the windows are destroyed after any seg faults etc.
+/*
+* Function        : clientExitSignalHandler()
+* Description    : it acts as the client exit signal handler, it sends out a signal to the server when the client exits
+* Parameters    : int signal_number            : a pointer to data 
+* Returns        : none
+*/
 void clientExitSignalHandler(int signal_number)
 {
     //displayWindow(msg_win, "Exiting client...", 4, 0);
@@ -378,6 +393,18 @@ int main(int argc, char* argv[])
 
 
 // command line argument parsing
+/*
+* Function        : parseArguments()
+* Description    : it helps to parse use command lines to pass user name and server name and IP
+* Parameters    : int argc                                  : argc as an int 
+*                 char* firstArg                            : firstArg as a pointer to char
+*                 char* secondArg                           : secondArg as a pointer to char
+*                 struct sockaddr_in* server_address_ptr    : server_address_ptr as sockaddr_in pointer to struct 
+*                 struct hostent** host_ptr                 : host_ptr as hostent pointer to pointer to struct 
+*                 char* userID                              : userID as pointer to char 
+*                 char* serverName                          : serverName as pointer to char
+* Returns        : 0 - success 
+*/
 int parseArguments(int argc, char* firstArg, char* secondArg, struct sockaddr_in* server_address_ptr, 
                     struct hostent** host_ptr, char* userID, char*serverName)
 {
@@ -418,6 +445,15 @@ int parseArguments(int argc, char* firstArg, char* secondArg, struct sockaddr_in
 
 
 // creates the chat window and message window for the client
+/*
+* Function        : createNewWindow()
+* Description    : it creates the chat window and message window for the client
+* Parameters    : int height        : height as an int 
+*                 int width         : width as an int 
+*                 int starty        : starty as an int
+*                 int startx        : startx as an int
+* Returns        : local_win as the chat window 
+*/
 WINDOW *createNewWindow(int height, int width, int starty, int startx)
 {
     WINDOW *local_win;
@@ -431,6 +467,19 @@ WINDOW *createNewWindow(int height, int width, int starty, int startx)
 
 
 // gets input characters from the user
+/*
+* Function        : inputMessage()
+* Description    : it gets input characters from the user
+* Parameters    : WINDOW *win        : win as a pointer to WINDOW
+*                 char * word        : word as a pointer to char
+*                 int i              : i as an int 
+*                 int ch             : ch as an int
+*                 int maxrow         : maxrow as an int
+*                 int maxcol         : maxcol as an int
+*                 int row            : row as an int
+*                 int col            : col as an int
+* Returns        : none
+*/
 void inputMessage(WINDOW *win, char *word)
 {
   int i, ch;
@@ -535,6 +584,16 @@ void inputMessage(WINDOW *win, char *word)
 
 // clears window if shouldBlank is 1
 // otherwise, updates window with new info
+
+/*
+* Function        : displayWindow()
+* Description    : it clears window if shouldBlank is 1, otherwise, updates window with new info
+* Parameters    : WINDOW *win        : win as a pointer to WINDOW
+*                 char * word        : word as a pointer to char
+*                 int whichRow       : whichRow as an int 
+*                 int shouldBlank    : shouldBlank as an int
+* Returns        : none
+*/
 void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank)
 {
   scrollok(win, TRUE);
@@ -561,6 +620,16 @@ void displayWindow(WINDOW *win, char *word, int whichRow, int shouldBlank)
 
 
 // clears all info from window
+
+/*
+* Function        : blankWindow()
+* Description    : it clears all info from window
+* Parameters    : WINDOW *win        : win as a pointer to WINDOW
+*                 char * word        : word as a pointer to char
+*                 int whichRow       : whichRow as an int 
+*                 int shouldBlank    : shouldBlank as an int
+* Returns        : none
+*/
 void blankWindow(WINDOW *win)
 {
   int i;
@@ -580,6 +649,15 @@ void blankWindow(WINDOW *win)
 
 
 // clears the first line of input from the message window
+/*
+* Function        : blankWindow()
+* Description    : it clears the first line of input from the message window
+* Parameters    : WINDOW *win        : win as a pointer to WINDOW
+*                 int rowToRemove    : rowToRemove as an int
+*                 WINDOW *chatWindow : chatWindow as a pointer to WINDOW
+*                 int maxcol         : maxcol as an int
+* Returns        : none
+*/
 void blankLine(WINDOW *win, int rowToRemove, WINDOW *chatWindow)
 {
 
@@ -601,6 +679,15 @@ void blankLine(WINDOW *win, int rowToRemove, WINDOW *chatWindow)
 }
 
 // shifts the chat history up one line
+/*
+* Function        : shiftLinesUp()
+* Description    : it shifts the chat history up one line
+* Parameters    : WINDOW *win        : win as a pointer to WINDOW
+*                 char * word        : word as a pointer to char
+*                 int whichRow       : whichRow as an int 
+*                 int shouldBlank    : shouldBlank as an int
+* Returns        : none
+*/
 void shiftLinesUp(WINDOW *win)
 {
     // int startRow = 1;
@@ -616,6 +703,15 @@ void shiftLinesUp(WINDOW *win)
 
 // structure:
 // messagelength|[username]|>>|message
+
+/*
+* Function        : composeMessage()
+* Description    : it creates the message for the server with the delimiters
+* Parameters    : char* buffer          : buffer as a pointer to char
+*                 int messageLength     : messageLength as an int
+*                 char* userID          : userID as a pointer to char
+* Returns        : messageToServer as a pointer to char
+*/
 char* composeMessage(char* buffer, int messageLength, char* userID)
 {
   char* messageToServer = (char*)malloc(CHAT_MSG_BUFFER + NULL_TERMINATION);
@@ -643,6 +739,14 @@ char* composeMessage(char* buffer, int messageLength, char* userID)
 
 
 // splits up longer message into two separate 40 char packets
+/*
+* Function        : makeMessagePackets()
+* Description    : it splits up longer message into two separate 40 char packets
+* Parameters    : char* buffer          : buffer as a pointer to char
+*                 int messageLength     : messageLength as an int
+*                 char* userID          : userID as a pointer to char
+* Returns        : messageToServer as a pointer to char
+*/
 void makeMessagePackets(char* buffer, int messageLength, char* firstPacket, char* secondPacket)
 {
 
